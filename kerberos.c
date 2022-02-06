@@ -331,7 +331,7 @@ int acquire_credential(struct auth_s *credentials) {
 	OM_uint32 min_stat, maj_stat;
 	gss_name_t target_name;
 	OM_uint32 lifetime = GSS_C_INDEFINITE;
-	gss_cred_id_t *id;
+	gss_cred_id_t *id = NULL;
 
 	char *password = credentials->passnt;
 
