@@ -1,0 +1,27 @@
+{
+    // See also:
+    // - https://go.microsoft.com/fwlink/?linkid=830387
+    // - https://medium.com/@willemdejonge/use-visual-studio-code-with-an-autotools-based-c-c-project-22d90118cd22
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "(gdb) Execute",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/cntlm",
+            "args": ["-v", "-f", "-a", "gss", "-c", "${workspaceFolder}/.cntlm.conf"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable gdb pretty printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                }
+            ]
+        }
+    ]
+}

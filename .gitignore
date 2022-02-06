@@ -1,0 +1,14 @@
+.*
+!.gitignore
+!.vscode
+
+*.o
+cntlm
+
+configure-stamp
+
+config/config.h
+config/endian
+config/gethostname
+config/strdup
+config/socklen_t
