@@ -14,8 +14,25 @@ MANDIR=$(DESTDIR)/usr/share/man
 #
 NAME=cntlm
 CC=gcc
-VER=`cat VERSION`
-CFLAGS+=$(FLAGS) -std=c99 -Wall -Wno-unused-but-set-variable -pedantic -O3 -D__BSD_VISIBLE -D_ALL_SOURCE -D_XOPEN_SOURCE=600 -D_POSIX_C_SOURCE=200112 -D_ISOC99_SOURCE -D_REENTRANT -D_DEFAULT_SOURCE -DVERSION=\"`cat VERSION`\"
+VER := $(shell cat VERSION)
+
+VERBOSE ?= 0
+ifeq ($(VERBOSE),1)
+V:=
+else
+V:=@
+endif
+
+
+DEBUG ?= 0
+ifeq ($(DEBUG),1)
+CFLAGS+=$(FLAGS) -O0 -g
+else
+CFLAGS+=$(FLAGS) -O3
+endif
+
+CFLAGS+=$(FLAGS) -std=c99 -Wall -Wno-unused-but-set-variable -pedantic -D__BSD_VISIBLE -D_ALL_SOURCE -D_XOPEN_SOURCE=600 -D_POSIX_C_SOURCE=200112 -D_ISOC99_SOURCE -D_REENTRANT -D_DEFAULT_SOURCE -DVERSION=\"$(VER)\"
+
 OS=$(shell uname -s)
 OSLDFLAGS=$(shell [ $(OS) = "SunOS" ] && echo "-lrt -lsocket -lnsl")
 LDFLAGS:=-lpthread $(OSLDFLAGS)
@@ -38,11 +55,11 @@ all: $(NAME)
 
 $(NAME): configure-stamp $(OBJS)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
+	$(V)$(CC) $(CFLAGS) -o $@ $(OBJS) $(LDFLAGS)
 
 main.o: main.c
 	@echo "Compiling $<"
-	@if [ -z "$(SYSCONFDIR)" ]; then \
+	$(V)if [ -z "$(SYSCONFDIR)" ]; then \
 		$(CC) $(CFLAGS) -c main.c -o $@; \
 	else \
 		$(CC) $(CFLAGS) -DSYSCONFDIR=\"$(SYSCONFDIR)\" -c main.c -o $@; \
@@ -50,7 +67,7 @@ main.o: main.c
 
 .c.o:
 	@echo "Compiling $<"
-	@$(CC) $(CFLAGS) -c -o $@ $<
+	$(V)$(CC) $(CFLAGS) -c -o $@ $<
 
 install: $(NAME)
 	# Special handling for install(1)
@@ -134,16 +151,16 @@ buildwin:
 
 win/resources.o: win/resources.rc
 	@echo Adding EXE resources
-	@windres $^ -o $@
+	$(V)windres $^ -o $@
 
 uninstall:
 	rm -f $(BINDIR)/$(NAME) $(MANDIR)/man1/$(NAME).1 2>/dev/null || true
 
 clean:
-	@rm -f *.o cntlm cntlm.exe configure-stamp build-stamp config/config.h 2>/dev/null
-	@rm -f win/*.exe win/*.dll win/*.iss win/*.pdf win/cntlm.ini win/license.txt win/resouces.o 2>/dev/null
-	@rm -f config/endian config/gethostname config/strdup config/socklen_t config/*.exe
-	@if [ -h Makefile ]; then rm -f Makefile; mv Makefile.gcc Makefile; fi
+	$(V)rm -f *.o cntlm cntlm.exe configure-stamp build-stamp config/config.h 2>/dev/null
+	$(V)rm -f win/*.exe win/*.dll win/*.iss win/*.pdf win/cntlm.ini win/license.txt win/resouces.o 2>/dev/null
+	$(V)rm -f config/endian config/gethostname config/strdup config/socklen_t config/*.exe
+	$(V)if [ -h Makefile ]; then rm -f Makefile; mv Makefile.gcc Makefile; fi
 
 distclean: clean
 	if [ `id -u` = 0 ]; then \
@@ -153,4 +170,4 @@ distclean: clean
 		fakeroot debian/rules clean; \
 		fakeroot rpm/rules clean; \
 	fi
-	@rm -f *.exe *.deb *.rpm *.tgz *.tar.gz *.tar.bz2 tags ctags pid 2>/dev/null
+	$(V)rm -f *.exe *.deb *.rpm *.tgz *.tar.gz *.tar.bz2 tags ctags pid 2>/dev/null
