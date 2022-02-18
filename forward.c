@@ -148,17 +148,18 @@ int proxy_connect(struct auth_s *credentials) {
  *
  */
 int proxy_authenticate(int *sd, rr_data_t request, rr_data_t response, struct auth_s *credentials) {
-	char *tmp, *buf, *challenge;
+	char *tmp, *buf = NULL, *challenge;
 	rr_data_t auth;
 	int len;
 
 	int pretend407 = 0;
 	int rc = 0;
 
-	buf = new(BUFSIZE);
-	
+
+		buf = new(BUFSIZE);
+
 #ifdef ENABLE_KERBEROS
-	if(g_creds->haskrb && acquire_kerberos_token(curr_proxy, credentials, buf)) {
+	if(g_creds->haskrb && acquire_kerberos_token(curr_proxy, credentials, &buf)) {
 		//pre auth, we try to authenticate directly with kerberos, without to ask if auth is needed
 		//we assume that if kdc releases a ticket for the proxy, then the proxy is configured for kerberos auth
 		//drawback is that later in the code cntlm logs that no auth is required because we have already authenticated
@@ -259,7 +260,7 @@ int proxy_authenticate(int *sd, rr_data_t request, rr_data_t response, struct au
 
 		if (tmp) {
 #ifdef ENABLE_KERBEROS		
-			if(g_creds->haskrb && strncasecmp(tmp, "NEGOTIATE", 9) == 0 && acquire_kerberos_token(curr_proxy, credentials, buf)) {
+			if(g_creds->haskrb && strncasecmp(tmp, "NEGOTIATE", 9) == 0 && acquire_kerberos_token(curr_proxy, credentials, &buf)) {
 				if (debug)
 					printf("Using Negotiation ...\n");
 

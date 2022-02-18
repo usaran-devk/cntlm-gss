@@ -238,9 +238,10 @@ int client_establish_context(char *service_name,
 /**
  * acquires a kerberos token for default credential using SPN HTTP@<thost>
  */
-int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials,
-		char* buf) {
-	char service_name[BUFSIZE], token[BUFSIZE];
+int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials, char** buf) {
+	char service_name[BUFSIZE];
+	size_t token_size;
+	char *token;
 	OM_uint32 ret_flags, min_stat;
 
 	if (credentials->haskrb == KRB_KO) {
@@ -273,17 +274,21 @@ int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials,
 	if (rc == GSS_S_COMPLETE) {
 		credentials->haskrb = KRB_OK;
 
-		to_base64((unsigned char *) token, send_tok.value, send_tok.length,
-				BUFSIZE);
+		token_size = 4*send_tok.length;
+		token_size /= 3;
+		token_size += 4 + 4;
+
+		*buf = realloc(*buf, token_size + (9+1) + 1);
+
+		strcpy(*buf, "NEGOTIATE ");
+		token = *buf + strlen(*buf);
+
+		to_base64((unsigned char *)token, send_tok.value, send_tok.length, token_size);
 
 		if (debug) {
-			syslog(LOG_INFO, "Token B64 (size=%d)... %s\n",
-					(int) strlen(token), token);
+			syslog(LOG_INFO, "Token B64 (%d size=%d)... %s\n", (int)token_size, (int) strlen(token), token);
 			display_ctx_flags(ret_flags);
 		}
-
-		strcpy(buf, "NEGOTIATE ");
-		strcat(buf, token);
 
 		rc=1;
 	} else {
@@ -331,7 +336,7 @@ int acquire_credential(struct auth_s *credentials) {
 	OM_uint32 min_stat, maj_stat;
 	gss_name_t target_name;
 	OM_uint32 lifetime = GSS_C_INDEFINITE;
-	gss_cred_id_t *id;
+	gss_cred_id_t *id = NULL;
 
 	char *password = credentials->passnt;
 
