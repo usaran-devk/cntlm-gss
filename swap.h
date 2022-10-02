@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 
-#include "config/config.h"
+#include "config.h"
 
 #define swap16(x) \
 	((uint16_t)( \

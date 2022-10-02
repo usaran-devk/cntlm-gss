@@ -28,7 +28,7 @@
 #include <pthread.h>
 #include <netinet/in.h>
 
-#include "config/config.h"
+#include "config.h"
 
 #define BUFSIZE			4096
 #define MINIBUF_SIZE		50

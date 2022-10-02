@@ -46,12 +46,12 @@
  * Some helping routines like linked list manipulation substr(), memory
  * allocation, NTLM authentication routines, etc.
  */
-#include "config/config.h"
+#include "config.h"
 #include "socket.h"
 #include "utils.h"
 #include "ntlm.h"
 #include "swap.h"
-#include "config.h"
+#include "config-file.h"
 #include "acl.h"
 #include "auth.h"
 #include "http.h"

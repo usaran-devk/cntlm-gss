@@ -52,7 +52,7 @@ else
 fi
 
 STAMP=configure-stamp
-CONFIG=config/config.h
+CONFIG=config.h
 TESTS="endian strdup socklen_t gethostname"
 
 #[ -f $STAMP ] && exit 0

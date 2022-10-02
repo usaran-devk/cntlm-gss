@@ -7,7 +7,7 @@ cntlm
 
 configure-stamp
 
-config/config.h
+config.h
 config/endian
 config/gethostname
 config/strdup

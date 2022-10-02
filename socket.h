@@ -25,7 +25,7 @@
 #include <netinet/in.h>
 #include <stdint.h>
 
-#include "config/config.h"
+#include "config.h"
 
 #if config_socklen_t != 1
 #define socklen_t uint32_t

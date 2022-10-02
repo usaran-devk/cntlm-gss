@@ -19,8 +19,8 @@
  *
  */
 
-#ifndef _CONFIG_H
-#define _CONFIG_H
+#ifndef _CONFIG_FILE_H
+#define _CONFIG_FILE_H
 
 #include <stdio.h>
 
@@ -40,4 +40,4 @@ extern char *config_pop(config_t cf, const char *option);
 extern int config_count(config_t cf);
 extern void config_close(config_t cf);
 
-#endif /* _CONFIG_H */
+#endif /* _CONFIG_FILE_H */

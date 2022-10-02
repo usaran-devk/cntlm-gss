@@ -25,7 +25,7 @@
 #include <stdlib.h>
 
 #include "globals.h"
-#include "config.h"
+#include "config-file.h"
 #include "utils.h"
 
 /*
