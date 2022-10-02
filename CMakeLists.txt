@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.20)
 project(cntlm-gss C)
 
+set(_cflags)
+set(_defines)
+set(_libs)
+set(_includes)
+
 file(READ "VERSION" VERSION)
 string(STRIP "${VERSION}" VERSION)
 
@@ -8,6 +13,11 @@ message(STATUS "*** Build ${PROJECT_NAME} ver. ${VERSION}")
 
 option(ENABLE_KERBEROS "Enable Kerberos support" ON)
 option(WITH_GSS_STUB "Build with built-in stub of libgssapi_krb5.so.2 (usefull for cross-compile)" OFF)
+
+if(NOT DEFINED SYSCONFDIR)
+    set(SYSCONFDIR "/etc")
+endif()
+list(APPEND _defines "SYSCONFDIR=\"${SYSCONFDIR}\"")
 
 if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
     set(BIG_ENDIAN TRUE)
@@ -25,10 +35,6 @@ check_symbol_exists("gethostname" "unistd.h" HAVE_GETHOSTNAME)
 list(APPEND CMAKE_EXTRA_INCLUDE_FILES "sys/socket.h")
 check_type_size("socklen_t" HAVE_SOCKLEN_T)
 
-set(_cflags)
-set(_libs)
-set(_includes)
-
 configure_file(config.h.in config.h)
 list(APPEND _includes ${CMAKE_BINARY_DIR})
 
@@ -45,7 +51,7 @@ if(ENABLE_KERBEROS)
 
     list(APPEND _sources kerberos.c)
     if(NOT WITH_GSS_STUB)
-        message(STATUS "*** using mit-krb5-gssapi")
+        message(STATUS "*** using system mit-krb5-gssapi")
         find_package(PkgConfig REQUIRED)
         pkg_check_modules(KRB5GSSAPI REQUIRED mit-krb5-gssapi)
         list(APPEND _cflags ${KRB5GSSAPI_CFLAGS_OTHER})
@@ -62,4 +68,7 @@ endif()
 add_executable(cntlm-gss ${_sources})
 target_link_libraries(cntlm-gss ${_libs})
 target_include_directories(cntlm-gss PRIVATE ${_includes})
-target_compile_options(cntlm-gss PRIVATE )
+target_compile_options(cntlm-gss PRIVATE ${_cflags})
+target_compile_definitions(cntlm-gss PRIVATE ${_defines})
+
+#target_compile_options(cntlm-gss PRIVATE -Wall -Wextra -Wpedantic -Werror)

@@ -732,7 +732,7 @@ char *new(size_t size) {
  * Self-explanatory.
  */
 char *lowercase(char *str) {
-	int i;
+    size_t i;
 
 	for (i = 0; i < strlen(str); ++i)
 		str[i] = tolower(str[i]);
@@ -744,7 +744,7 @@ char *lowercase(char *str) {
  * Self-explanatory.
  */
 char *uppercase(char *str) {
-	int i;
+    size_t i;
 
 	for (i = 0; i < strlen(str); ++i)
 		str[i] = toupper(str[i]);
@@ -772,7 +772,7 @@ int unicode(char **dst, char *src) {
 
 char *urlencode(const char *str) {
 	char *tmp;
-	int i, pos;
+    size_t i, pos;
 
 	tmp = new(strlen(str)*3 + 1);
 	for (pos = 0, i = 0; i < strlen(str); ++i) {

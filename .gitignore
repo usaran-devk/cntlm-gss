@@ -8,7 +8,9 @@ cntlm
 configure-stamp
 
 config.h
-config/endian
-config/gethostname
-config/strdup
-config/socklen_t
+config/big_endian
+config/have_strdup
+config/have_socklen_t
+config/have_gethostname
+
+CMakeLists.txt.user

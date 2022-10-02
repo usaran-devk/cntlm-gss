@@ -676,6 +676,10 @@ int main(int argc, char **argv) {
 	hlist_t list;
 	int i, w;
 
+#ifdef SYSCONFDIR
+	const char *default_config;
+#endif
+
 	int cd = 0;
 	int help = 0;
 	int nuid = 0;
@@ -965,15 +969,16 @@ int main(int argc, char **argv) {
 		head = new(MINIBUF_SIZE);
 		strlcpy(head, tmp, MINIBUF_SIZE);
 		strlcat(head, "\\Cntlm\\cntlm.ini", MINIBUF_SIZE);
-		cf = config_open(head);
+		default_config = head;
 #else
-		cf = config_open(SYSCONFDIR "/cntlm.conf");
+		default_config = SYSCONFDIR "/cntlm.conf";
 #endif
+		cf = config_open(default_config);
 		if (debug) {
 			if (cf)
-				printf("Default config file opened successfully\n");
+				printf("Default config file %s opened successfully\n", default_config);
 			else
-				syslog(LOG_ERR, "Could not open default config file\n");
+				syslog(LOG_ERR, "Could not open default config file %s\n", default_config);
 		}
 	}
 #endif
