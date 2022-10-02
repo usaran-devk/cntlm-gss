@@ -159,7 +159,7 @@ uninstall:
 clean:
 	$(V)rm -f *.o cntlm cntlm.exe configure-stamp build-stamp config.h 2>/dev/null
 	$(V)rm -f win/*.exe win/*.dll win/*.iss win/*.pdf win/cntlm.ini win/license.txt win/resouces.o 2>/dev/null
-	$(V)rm -f config/endian config/gethostname config/strdup config/socklen_t config/*.exe
+	$(V)rm -f config/big_endian config/have_gethostname config/have_socklen_t config/have_strdup config/*.exe
 	$(V)if [ -h Makefile ]; then rm -f Makefile; mv Makefile.gcc Makefile; fi
 
 distclean: clean

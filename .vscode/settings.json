@@ -1,0 +1,15 @@
+{
+    // https://github.com/microsoft/vscode-cmake-tools/blob/main/docs/cmake-settings.md
+    //"cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.buildDirectory": "${workspaceFolder}/.build",
+
+    "cmake.configureOnOpen": false,
+    // "cmake.generator": "Unix Makefiles",
+    "cmake.configureArgs": [
+        "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
+        // "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
+        // "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
+    ]
+
+    //"C_Cpp.loggingLevel": "Debug",
+}

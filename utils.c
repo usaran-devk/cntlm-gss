@@ -638,7 +638,7 @@ char *trimr(char *buf) {
 	return buf;
 }
 
-#if config_strdup == 0
+#ifndef HAVE_STRDUP
 /*
  * Our implementation of non-POSIX strdup()
  */

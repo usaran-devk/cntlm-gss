@@ -27,7 +27,7 @@
 
 #include "config.h"
 
-#if config_socklen_t != 1
+#ifndef HAVE_SOCKLEN_T
 #define socklen_t uint32_t
 #endif
 
