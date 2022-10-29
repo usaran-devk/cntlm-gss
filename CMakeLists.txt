@@ -11,9 +11,6 @@ string(STRIP "${VERSION}" VERSION)
 
 message(STATUS "*** Build ${PROJECT_NAME} ver. ${VERSION}")
 
-option(ENABLE_KERBEROS "Enable Kerberos support" ON)
-option(WITH_GSS_STUB "Build with built-in stub of libgssapi_krb5.so.2 (usefull for cross-compile)" OFF)
-
 if(NOT DEFINED SYSCONFDIR)
     set(SYSCONFDIR "/etc")
 endif()
@@ -45,6 +42,9 @@ set(_sources
     utils.c ntlm.c xcrypt.c config-file.c socket.c acl.c auth.c http.c forward.c direct.c scanner.c pages.c
     main.c
 )
+
+option(ENABLE_KERBEROS "Enable Kerberos support" ON)
+option(WITH_GSS_STUB "Build with built-in stub of libgssapi_krb5.so.2 (usefull for cross-compile)" OFF)
 
 if(ENABLE_KERBEROS)
     message(STATUS "*** With Kerberos support enabled")

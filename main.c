@@ -1073,6 +1073,28 @@ int main(int argc, char **argv) {
 		}
 
 		/*
+		 * Add ACL hosts for forward
+		*/
+		list = cf->options;
+		while (list) {
+			if (!(i=strcasecmp("forward.Allow", list->key)) || !strcasecmp("forward.Deny", list->key)) {
+				tmp = strdup(list->value);
+				rules_forward = plist_add(rules_forward, i ? ACL_DENY : ACL_ALLOW, tmp);
+			}
+			list = list->next;
+		}
+		while ((tmp = config_pop(cf, "forward.Allow")))
+			free(tmp);
+		while ((tmp = config_pop(cf, "forward.Deny")))
+			free(tmp);
+
+		tmp = new(MINIBUF_SIZE);
+		CFG_DEFAULT(cf, "forward.AllowRedirects", tmp, MINIBUF_SIZE);
+		if (!strcasecmp("yes", tmp))
+			forward_allow_redirects = 1;
+		free(tmp);
+
+		/*
 		 * Single options.
 		 */
 		CFG_DEFAULT(cf, "Auth", cauth, MINIBUF_SIZE);
@@ -1150,11 +1172,14 @@ int main(int argc, char **argv) {
 	if (!interactivehash && !magic_detect && !proxyd_list)
 		croak("No proxy service ports were successfully opened.\n", interactivepwd);
 
+	if (!rules_forward)
+		croak("No ACL for forward is defined, add Allow host/masks to the [forward] section in config file!.\n", interactivepwd || magic_detect);
+
 	/*
 	 * Set default value for the workstation. Hostname if possible.
 	 */
 	if (!strlen(cworkstation)) {
-#if config_gethostname == 1
+#ifdef HAVE_GETHOSTNAME
 		gethostname(cworkstation, MINIBUF_SIZE);
 #endif
 		if (!strlen(cworkstation))
@@ -1634,6 +1659,7 @@ bailout:
 	plist_free(proxyd_list);
 	plist_free(socksd_list);
 	plist_free(rules);
+	plist_free(rules_forward);
 
 	free(cuid);
 	free(cpidfile);

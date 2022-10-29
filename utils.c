@@ -88,6 +88,20 @@ plist_t plist_add(plist_t list, unsigned long key, void *aux) {
 }
 
 /*
+ * Insert a new item to a list
+ */
+plist_t plist_insert(plist_t list, unsigned long key, void *aux) {
+	plist_t tmp;
+
+	tmp = malloc(sizeof(struct plist_s));
+	tmp->key = key;
+	tmp->aux = aux;
+	tmp->next = list;
+
+	return tmp;
+}
+
+/*
  * Delete an item from the list, possibly returning NULL when
  * the list is empty or nothing was found.
  */

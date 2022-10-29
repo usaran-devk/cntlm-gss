@@ -112,6 +112,7 @@ extern void myexit(int rc);
 extern void croak(const char *msg, int console);
 
 extern plist_t plist_add(plist_t list, unsigned long key, void *aux);
+extern plist_t plist_insert(plist_t list, unsigned long key, void *aux);
 extern plist_t plist_del(plist_t list, unsigned long key);
 extern int plist_in(plist_t list, unsigned long key);
 extern void plist_dump(plist_t list);

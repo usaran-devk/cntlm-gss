@@ -9,7 +9,12 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/.build/cntlm-gss",
-            "args": ["-v", "-f", "-a", "gss", "-c", "${workspaceFolder}/.cntlm-gss.conf"],
+            "args": [
+                "-v", 
+                "-f", 
+                //"-a", "gss", 
+                "-c", "${workspaceFolder}/.cntlm-gss.conf"
+            ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

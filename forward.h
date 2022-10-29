@@ -23,6 +23,9 @@
 #include "utils.h"
 #include "auth.h"
 
+extern plist_t rules_forward;
+extern int forward_allow_redirects;
+
 extern int proxy_connect(struct auth_s *credentials);
 extern int proxy_authenticate(int *sd, rr_data_t request, rr_data_t response, struct auth_s *creds);
 extern int prepare_http_connect(int sd, struct auth_s *credentials, const char *thost);

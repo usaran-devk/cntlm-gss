@@ -27,10 +27,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <strings.h>
+#include <fnmatch.h>
 
 #include "utils.h"
 #include "globals.h"
 #include "auth.h"
+#include "acl.h"
 #include "http.h"
 #include "socket.h"
 #include "ntlm.h"
@@ -44,6 +46,24 @@
 
 int parent_curr = 0;
 pthread_mutex_t parent_mtx = PTHREAD_MUTEX_INITIALIZER;
+
+plist_t rules_forward = NULL;
+int forward_allow_redirects = 0;
+
+/*
+ * Find ACL for hostname in rules
+ */
+enum acl_t acl_host_check(plist_t rules, const char *hostname)
+{
+	while (rules) {
+		//if ((strcmp(rules->aux, "*") == 0) || (strcasecmp(rules->aux, hostname) == 0)) {
+		if (fnmatch(rules->aux, hostname, 0) == 0) {
+			return rules->key;
+		}
+		rules = rules->next;
+	}
+	return ACL_DENY;
+}
 
 /*
  * Connect to the selected proxy. If the request fails, pick next proxy
@@ -384,6 +404,16 @@ beginning:
 	rsocket[0] = wsocket[1] = &cd;
 	rsocket[1] = wsocket[0] = &sd;
 
+	if (acl_host_check(rules_forward, request->hostname) == ACL_DENY) {
+		syslog(LOG_ERR, "Denied forwad for host %s\n", request->hostname);
+
+		tmp = gen_denied_page(request->hostname);
+		w = write(cd, tmp, strlen(tmp));
+		free(tmp);
+		rc = (void *)-1;
+		goto bailout;
+	}
+
 	if (debug) {
 		printf("Thread processing%s...\n", retry ? " (retry)" : "");
 		pthread_mutex_lock(&connection_mtx);
@@ -489,8 +519,21 @@ beginning:
 			 */
 			if (loop == 0 && hostname && data[0]->hostname
 					&& strcasecmp(hostname, data[0]->hostname)) {
+
+				if (forward_allow_redirects) {
+					pthread_mutex_lock(&parent_mtx);
+					if (acl_host_check(rules_forward, data[0]->hostname) == ACL_DENY) {
+						tmp = strdup(data[0]->hostname);
+						syslog(LOG_INFO, "Allow forward for host %s as redirect from %s\n", tmp, hostname);
+						tmp = strdup(data[0]->hostname);
+						rules_forward = plist_insert(rules_forward, ACL_ALLOW, tmp);
+					}
+					pthread_mutex_unlock(&parent_mtx);
+				}
+
 				if (debug)
 					printf("\n******* F RETURN: %s *******\n", data[0]->url);
+
 				if (authok)
 					proxy_alive = 1;
 
