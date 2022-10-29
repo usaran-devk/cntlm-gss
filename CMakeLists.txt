@@ -71,4 +71,10 @@ target_include_directories(cntlm-gss PRIVATE ${_includes})
 target_compile_options(cntlm-gss PRIVATE ${_cflags})
 target_compile_definitions(cntlm-gss PRIVATE ${_defines})
 
+if(WITH_GSS_STUB)
+    set_target_properties(cntlm-gss
+        PROPERTIES
+            SKIP_BUILD_RPATH TRUE
+    )
+endif()
 #target_compile_options(cntlm-gss PRIVATE -Wall -Wextra -Wpedantic -Werror)
