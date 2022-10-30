@@ -8,11 +8,8 @@
     //"C_Cpp.intelliSenseEngineFallback": "Enabled",
     //"C_Cpp.loggingLevel": "Debug",
     "cmake.configureArgs": [
-        "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
+        "-DCMAKE_VERBOSE_MAKEFILE=TRUE"
         // "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
         // "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
     ],
-    "files.associations": {
-        "acl.h": "c"
-    }
 }

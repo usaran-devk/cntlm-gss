@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 project(cntlm-gss C)
 
+option(ENABLE_KERBEROS "Enable Kerberos support" ON)
+option(WITH_GSS_STUB "Build with built-in stub of libgssapi_krb5.so.2 (usefull for cross-compile)" OFF)
+
 set(_cflags)
 set(_defines)
 set(_libs)
@@ -43,13 +46,10 @@ set(_sources
     main.c
 )
 
-option(ENABLE_KERBEROS "Enable Kerberos support" ON)
-option(WITH_GSS_STUB "Build with built-in stub of libgssapi_krb5.so.2 (usefull for cross-compile)" OFF)
-
 if(ENABLE_KERBEROS)
     message(STATUS "*** With Kerberos support enabled")
-
     list(APPEND _sources kerberos.c)
+
     if(NOT WITH_GSS_STUB)
         message(STATUS "*** using system mit-krb5-gssapi")
         find_package(PkgConfig REQUIRED)
@@ -71,10 +71,10 @@ target_include_directories(cntlm-gss PRIVATE ${_includes})
 target_compile_options(cntlm-gss PRIVATE ${_cflags})
 target_compile_definitions(cntlm-gss PRIVATE ${_defines})
 
-if(WITH_GSS_STUB)
-    set_target_properties(cntlm-gss
-        PROPERTIES
-            SKIP_BUILD_RPATH TRUE
-    )
-endif()
+set_target_properties(cntlm-gss
+    PROPERTIES
+        SKIP_BUILD_RPATH TRUE
+)
 #target_compile_options(cntlm-gss PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+install(TARGETS cntlm-gss)
