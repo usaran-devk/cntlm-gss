@@ -182,6 +182,7 @@ rr_data_t direct_request(void *cdata, rr_data_t request) {
 	int *rsocket[2], *wsocket[2];
 	int loop, sd;
 	char *tmp;
+	int _unused __attribute__((unused));
 
 	char *hostname = NULL;
 	int port = 0;
@@ -197,7 +198,7 @@ rr_data_t direct_request(void *cdata, rr_data_t request) {
 	if (sd < 0) {
 		syslog(LOG_WARNING, "Connection failed for %s:%d (%s)", request->hostname, request->port, strerror(errno));
 		tmp = gen_502_page(request->http, strerror(errno));
-		write(cd, tmp, strlen(tmp));
+		_unused = write(cd, tmp, strlen(tmp));
 		free(tmp);
 
 		rc = (void *)-1;
@@ -215,7 +216,7 @@ rr_data_t direct_request(void *cdata, rr_data_t request) {
 		port = request->port;
 	} else {
 		tmp = gen_502_page(request->http, "Invalid request URL");
-		write(cd, tmp, strlen(tmp));
+		_unused = write(cd, tmp, strlen(tmp));
 		free(tmp);
 
 		rc = (void *)-1;
@@ -326,7 +327,7 @@ rr_data_t direct_request(void *cdata, rr_data_t request) {
 					sd = host_connect(data[0]->hostname, data[0]->port);
 					if (sd < 0) {
 						tmp = gen_502_page(data[0]->http, "WWW authentication reconnect failed");
-						write(cd, tmp, strlen(tmp));
+						_unused = write(cd, tmp, strlen(tmp));
 						free(tmp);
 
 						rc = (void *)-1;
@@ -338,7 +339,7 @@ rr_data_t direct_request(void *cdata, rr_data_t request) {
 						printf("WWW auth connection error.\n");
 
 					tmp = gen_502_page(data[1]->http, data[1]->errmsg ? data[1]->errmsg : "Error during WWW-Authenticate");
-					write(cd, tmp, strlen(tmp));
+					_unused = write(cd, tmp, strlen(tmp));
 					free(tmp);
 
 					free_rr_data(data[0]);
@@ -352,7 +353,7 @@ rr_data_t direct_request(void *cdata, rr_data_t request) {
 					 * Request basic auth
 					 */
 					tmp = gen_401_page(data[1]->http, data[0]->hostname, data[0]->port);
-					write(cd, tmp, strlen(tmp));
+					_unused = write(cd, tmp, strlen(tmp));
 					free(tmp);
 
 					free_rr_data(data[0]);

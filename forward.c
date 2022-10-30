@@ -393,6 +393,7 @@ rr_data_t forward_request(void *thread_data, rr_data_t request) {
 	int authok;
 	int noauth;
 	int was_cached;
+	int _unused __attribute__((unused));
 
 	int sd;
 	int cd = ((struct thread_arg_s *)thread_data)->fd;
@@ -408,7 +409,7 @@ beginning:
 		syslog(LOG_ERR, "Denied forwad for host %s\n", request->hostname);
 
 		tmp = gen_denied_page(request->hostname);
-		write(cd, tmp, strlen(tmp));
+		_unused = write(cd, tmp, strlen(tmp));
 		free(tmp);
 		rc = (void *)-1;
 		goto bailout;
@@ -443,7 +444,7 @@ beginning:
 		sd = proxy_connect(tcreds);
 		if (sd <= 0) {
 			tmp = gen_502_page(request->http, "Parent proxy unreacheable");
-			write(cd, tmp, strlen(tmp));
+			_unused = write(cd, tmp, strlen(tmp));
 			free(tmp);
 			rc = (void *)-1;
 			goto bailout;
@@ -568,7 +569,7 @@ shortcut:
 						printf("NTLM-to-basic: Returning client auth request.\n");
 
 					tmp = gen_407_page(data[loop]->http);
-					write(cd, tmp, strlen(tmp));
+					_unused = write(cd, tmp, strlen(tmp));
 					free(tmp);
 
 					free_rr_data(data[0]);

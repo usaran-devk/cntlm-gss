@@ -371,6 +371,7 @@ int chunked_data_send(int dst, int src) {
 	int i, csize;
 
 	char *err = NULL;
+	int _unused __attribute__((unused));
 
 	bsize = BUFSIZE;
 	buf = new(bsize);
@@ -411,7 +412,7 @@ int chunked_data_send(int dst, int src) {
 	do {
 		i = so_recvln(src, &buf, &bsize);
 		if (dst >= 0 && i > 0)
-			write(dst, buf, strlen(buf));
+			_unused = write(dst, buf, strlen(buf));
 	} while (i > 0 && buf[0] != '\r' && buf[0] != '\n');
 
 	free(buf);

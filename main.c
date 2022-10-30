@@ -423,6 +423,7 @@ void *socks5_thread(void *thread_data) {
 	int found = -1;
 	int sd = -1;
 	int open = !hlist_count(users_list);
+	int _unused __attribute__((unused));
 
 	int cd = ((struct thread_arg_s *)thread_data)->fd;
 	struct sockaddr_in caddr = ((struct thread_arg_s *)thread_data)->addr;
@@ -468,12 +469,12 @@ void *socks5_thread(void *thread_data) {
 	if (found < 0) {
 		bs[0] = 5;
 		bs[1] = 0xFF;
-		write(cd, bs, 2);
+		_unused = write(cd, bs, 2);
 		goto bailout;
 	} else {
 		bs[0] = 5;
 		bs[1] = found;
-		write(cd, bs, 2);
+		_unused = write(cd, bs, 2);
 	}
 
 	/*
@@ -487,7 +488,7 @@ void *socks5_thread(void *thread_data) {
 		if (r != 2) {
 			bs[0] = 1;
 			bs[1] = 0xFF;		/* Unsuccessful (not supported) */
-			write(cd, bs, 2);
+			_unused = write(cd, bs, 2);
 			goto bailout;
 		}
 		c = bs[1];
@@ -532,7 +533,7 @@ void *socks5_thread(void *thread_data) {
 		/*
 		 * Send response
 		 */
-		write(cd, bs, 2);
+		_unused = write(cd, bs, 2);
 		free(upass);
 		free(uname);
 
@@ -559,7 +560,7 @@ void *socks5_thread(void *thread_data) {
 		bs[2] = 0;
 		bs[3] = 1;			/* Dummy IPv4 */
 		memset(bs+4, 0, 6);
-		write(cd, bs, 10);
+		_unused = write(cd, bs, 10);
 		goto bailout;
 	}
 
@@ -627,7 +628,7 @@ void *socks5_thread(void *thread_data) {
 		bs[2] = 0;
 		bs[3] = 1;			/* Dummy IPv4 */
 		memset(bs+4, 0, 6);
-		write(cd, bs, 10);
+		_unused = write(cd, bs, 10);
 		goto bailout;
 	} else {
 		/*
@@ -638,7 +639,7 @@ void *socks5_thread(void *thread_data) {
 		bs[2] = 0;
 		bs[3] = 1;			/* Dummy IPv4 */
 		memset(bs+4, 0, 6);
-		write(cd, bs, 10);
+		_unused = write(cd, bs, 10);
 	}
 
 	syslog(LOG_DEBUG, "%s SOCKS %s", inet_ntoa(caddr.sin_addr), thost);
@@ -681,6 +682,7 @@ int main(int argc, char **argv) {
 	int n;
 	int opt;
 	pid_t pid;
+	int _unused __attribute__((unused));
 
 #ifdef SYSCONFDIR
 	const char *default_config;
@@ -896,11 +898,11 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "\t-A  <address>[/<net>]\n"
 				"\t    ACL allow rule. IP or hostname, net must be a number (CIDR notation)\n");
 		fprintf(stderr, "\t-a  ntlm | nt | lm\n"
-				"\t    Authentication type - combined NTLM, just LM, or just NT. Default NTLM.\n"
+				"\t    Authentication type - combined NTLM, just LM, or just NT. Default NTLM.\n");
 #ifdef ENABLE_KERBEROS
-				"\t    GSS activates kerberos auth: you need a cached credential.\n"
+		fprintf(stderr, "\t    GSS activates kerberos auth: you need a cached credential.\n");
 #endif
-				"\t    It is the most versatile setting and likely to work for you.\n");
+		fprintf(stderr, "\t    It is the most versatile setting and likely to work for you.\n");
 		fprintf(stderr, "\t-B  Enable NTLM-to-basic authentication.\n");
 		fprintf(stderr, "\t-c  <config_file>\n"
 				"\t    Configuration file. Other arguments can be used as well, overriding\n"
@@ -1399,7 +1401,7 @@ int main(int argc, char **argv) {
 
 		setsid();
 		umask(0);
-		chdir("/");
+		_unused = chdir("/");
 
 		n = open("/dev/null", O_RDWR);
 		if (n >= 0) {
@@ -1446,7 +1448,7 @@ int main(int argc, char **argv) {
 				nuid = pw->pw_uid;
 				ngid = pw->pw_gid;
 			}
-			setgid(ngid);
+			_unused = setgid(ngid);
 			n = setuid(nuid);
 			syslog(LOG_INFO, "Changing uid:gid to %d:%d - %s\n", nuid, ngid, strerror(errno));
 			if (n) {
@@ -1470,7 +1472,7 @@ int main(int argc, char **argv) {
 
 		tmp = new(50);
 		snprintf(tmp, 50, "%d\n", getpid());
-		write(cd, tmp, strlen(tmp));
+		_unused = write(cd, tmp, strlen(tmp));
 		free(tmp);
 		close(cd);
 	}
@@ -1577,7 +1579,7 @@ int main(int argc, char **argv) {
 					syslog(LOG_WARNING, "Connection denied for %s:%d\n",
 						inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
 					tmp = gen_denied_page(inet_ntoa(caddr.sin_addr));
-					write(cd, tmp, strlen(tmp));
+					_unused = write(cd, tmp, strlen(tmp));
 					free(tmp);
 					close(cd);
 					continue;

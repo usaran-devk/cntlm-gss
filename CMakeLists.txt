@@ -84,6 +84,10 @@ set_target_properties(cntlm-gss
         SKIP_BUILD_RPATH TRUE
 )
 
-target_compile_options(cntlm-gss PRIVATE -Wall -Wextra -Wpedantic -Werror)
+set(compile_options -Wall -Wextra -Wpedantic -Werror)
+#if (CMAKE_COMPILER_IS_GNUCC)
+#    list(APPEND compile_options -Wno-error=unused-result)
+#endif()
+target_compile_options(cntlm-gss PRIVATE ${compile_options})
 
 install(TARGETS cntlm-gss)
