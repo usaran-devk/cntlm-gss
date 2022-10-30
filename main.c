@@ -113,6 +113,9 @@ plist_t noproxy_list = NULL;			/* proxy_thread() */
  * General signal handler. If in debug mode, quit immediately.
  */
 void sighandler(int p) {
+	if (p == SIGINT)
+		quit++;
+
 	if (!quit)
 		syslog(LOG_INFO, "Signal %d received, issuing clean shutdown\n", p);
 	else
