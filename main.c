@@ -466,6 +466,8 @@ void *socks5_thread(void *thread_data) {
 		bs[0] = 5;
 		bs[1] = 0xFF;
 		w = write(cd, bs, 2);
+		// We don't really care about the result - shut up GCC warning (unused-but-set-variable)
+		if (!w) w = 1;
 		goto bailout;
 	} else {
 		bs[0] = 5;
@@ -1424,6 +1426,8 @@ int main(int argc, char **argv) {
 	 * If we fail, exit with error.
 	 */
 	if (strlen(cpidfile)) {
+		int len;
+
 		umask(0);
 		cd = open(cpidfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (cd < 0) {
@@ -1433,7 +1437,11 @@ int main(int argc, char **argv) {
 
 		tmp = new(50);
 		snprintf(tmp, 50, "%d\n", getpid());
-		w = write(cd, tmp, strlen(tmp));
+		w = write(cd, tmp, (len = strlen(tmp)));
+		if (w != len) {
+			syslog(LOG_ERR, "Error writing to the PID file\n");
+			myexit(1);
+		}
 		free(tmp);
 		close(cd);
 	}
@@ -1541,6 +1549,8 @@ int main(int argc, char **argv) {
 						inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
 					tmp = gen_denied_page(inet_ntoa(caddr.sin_addr));
 					w = write(cd, tmp, strlen(tmp));
+					// We don't really care about the result - shut up GCC warning (unused-but-set-variable)
+					if (!w) w = 1;
 					free(tmp);
 					close(cd);
 					continue;
