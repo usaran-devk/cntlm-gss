@@ -82,14 +82,13 @@ void display_ctx_flags(OM_uint32 flags) {
 }
 
 static void display_status_1(char *m, OM_uint32 code, int type) {
-	OM_uint32 maj_stat, min_stat;
+	OM_uint32 min_stat;
 	gss_buffer_desc msg;
 	OM_uint32 msg_ctx;
 
 	msg_ctx = 0;
 	while (1) {
-		maj_stat = gss_display_status(&min_stat, code, type, GSS_C_NULL_OID,
-				&msg_ctx, &msg);
+		gss_display_status(&min_stat, code, type, GSS_C_NULL_OID, &msg_ctx, &msg);
 		if (1)
 			syslog(LOG_ERR, "GSS-API error %s: %s\n", m, (char *) msg.value);
 		(void) gss_release_buffer(&min_stat, &msg);
@@ -341,10 +340,10 @@ int acquire_credential(struct auth_s *credentials) {
 	char *password = credentials->passnt;
 
 	//!(g_creds->haskrb & KRB_CREDENTIAL_AVAILABLE)
-	if (credentials->user && password) {
+	if (credentials->user[0] && password) {
 		char name[BUFSIZ];
 		strcpy(name, credentials->user);
-		if (credentials->domain) {
+		if (credentials->domain[0]) {
 			strcat(name, "@");
 			strcat(name, credentials->domain);
 		}

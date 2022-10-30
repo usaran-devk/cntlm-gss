@@ -46,7 +46,8 @@ config_t config_open(const char *fname) {
 	char *buf, *tmp, *key, *value;
 	const char *global_section_name = "global";
 	char section[MINIBUF_SIZE];
-	int i, j, slen, len, quote;
+	size_t i, j, len;
+	int slen, quote;
 
 	strcpy(section, global_section_name);
 

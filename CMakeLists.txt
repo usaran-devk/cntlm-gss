@@ -83,6 +83,7 @@ set_target_properties(cntlm-gss
     PROPERTIES
         SKIP_BUILD_RPATH TRUE
 )
-#target_compile_options(cntlm-gss PRIVATE -Wall -Wextra -Wpedantic -Werror)
+
+target_compile_options(cntlm-gss PRIVATE -Wall -Wextra -Wpedantic -Werror)
 
 install(TARGETS cntlm-gss)

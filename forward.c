@@ -381,7 +381,7 @@ bailout:
  * request is NOT freed
  */
 rr_data_t forward_request(void *thread_data, rr_data_t request) {
-	int i, w, loop, plugin, retry = 0;
+	int i, loop, plugin, retry = 0;
 	int *rsocket[2], *wsocket[2];
 	rr_data_t data[2], rc = NULL;
 	hlist_t tl;
@@ -408,7 +408,7 @@ beginning:
 		syslog(LOG_ERR, "Denied forwad for host %s\n", request->hostname);
 
 		tmp = gen_denied_page(request->hostname);
-		w = write(cd, tmp, strlen(tmp));
+		write(cd, tmp, strlen(tmp));
 		free(tmp);
 		rc = (void *)-1;
 		goto bailout;
@@ -443,7 +443,7 @@ beginning:
 		sd = proxy_connect(tcreds);
 		if (sd <= 0) {
 			tmp = gen_502_page(request->http, "Parent proxy unreacheable");
-			w = write(cd, tmp, strlen(tmp));
+			write(cd, tmp, strlen(tmp));
 			free(tmp);
 			rc = (void *)-1;
 			goto bailout;
@@ -568,7 +568,7 @@ shortcut:
 						printf("NTLM-to-basic: Returning client auth request.\n");
 
 					tmp = gen_407_page(data[loop]->http);
-					w = write(cd, tmp, strlen(tmp));
+					write(cd, tmp, strlen(tmp));
 					free(tmp);
 
 					free_rr_data(data[0]);
@@ -930,7 +930,7 @@ void magic_auth_detect(const char *url) {
 	tcreds = new_auth();
 	copy_auth(tcreds, g_creds, /* fullcopy */ 1);
 
-	if (!tcreds->passnt || !tcreds->passlm || !tcreds->passntlm2) {
+	if (!tcreds->passnt[0] || !tcreds->passlm[0] || !tcreds->passntlm2[0]) {
 		printf("Cannot detect NTLM dialect - password or all its hashes must be defined, try -I\n");
 		exit(1);
 	}

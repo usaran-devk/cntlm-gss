@@ -162,7 +162,7 @@ void plist_dump(plist_t list) {
 /*
  * Return the pointer associated with the key.
  */
-char *plist_get(plist_t list, int key) {
+char *plist_get(plist_t list, unsigned long key) {
 	plist_t t = list;
 
 	while (t) {
@@ -492,8 +492,8 @@ void hlist_dump(hlist_t list) {
  * Standard substr. To prevent modification of the source
  * (terminating \x0), return the result in a new memory.
  */
-char *substr(const char *src, int pos, int len) {
-	int l;
+char *substr(const char *src, size_t pos, size_t len) {
+	size_t l;
 	char *tmp;
 
 	if (len == 0)
@@ -803,7 +803,7 @@ char *urlencode(const char *str) {
 
 char *printmem(char *src, size_t len, int bitwidth) {
 	char *tmp;
-	int i;
+	size_t i;
 
 	tmp = new(2*len+1);
 	for (i = 0; i < len; ++i) {

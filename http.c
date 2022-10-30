@@ -52,7 +52,7 @@ int is_http_header(const char *src) {
  * Extract the header name from the source.
  */
 char *get_http_header_name(const char *src) {
-	int i;
+	size_t i;
 
 	i = strcspn(src, ":");
 	if (i != strlen(src))
@@ -368,7 +368,7 @@ int data_send(int dst, int src, length_t len) {
 int chunked_data_send(int dst, int src) {
 	char *buf;
 	int bsize;
-	int i, w, csize;
+	int i, csize;
 
 	char *err = NULL;
 
@@ -411,7 +411,7 @@ int chunked_data_send(int dst, int src) {
 	do {
 		i = so_recvln(src, &buf, &bsize);
 		if (dst >= 0 && i > 0)
-			w = write(dst, buf, strlen(buf));
+			write(dst, buf, strlen(buf));
 	} while (i > 0 && buf[0] != '\r' && buf[0] != '\n');
 
 	free(buf);
@@ -597,7 +597,7 @@ int http_body_drop(int fd, rr_data_t response) {
  */
 int http_parse_basic(hlist_t headers, const char *header, struct auth_s *tcreds) {
 	char *tmp = NULL, *pos = NULL, *buf = NULL, *dom = NULL;
-	int i;
+	size_t i;
 
 	if (!hlist_subcmp(headers, header, "basic"))
 		return 0;
