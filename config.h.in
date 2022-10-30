@@ -1,6 +1,12 @@
+#ifndef _CONFIG_H
+#define _CONFIG_H
+
 #define VERSION "${VERSION}"
+#define SYSCONFDIR "${SYSCONFDIR}"
 #cmakedefine BIG_ENDIAN
 #cmakedefine HAVE_STRDUP
 #cmakedefine HAVE_SOCKLEN_T
 #cmakedefine HAVE_GETHOSTNAME
 #cmakedefine ENABLE_KERBEROS
+
+#endif

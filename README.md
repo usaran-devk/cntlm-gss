@@ -13,9 +13,13 @@ $ cd .build
 
 $ cmake -DCMAKE_BUILD_TYPE="Release" ..
 ...or...
-$ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_TOOLCHAIN_FILE=/path/to/toolchain.cmake -DWITH_GSS_STUB=ON ..
+$ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/path/to/toolchain.cmake -DWITH_GSS_STUB=ON ..
 
 $ cmake --build .
+
+...
+
+$ cmake --install . --strip
 ```
 
 **Legacy:**

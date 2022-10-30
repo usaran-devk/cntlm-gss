@@ -1,0 +1,11 @@
+[Unit]
+Description=CNTLM HTTP Accelerator For NTLM/Kerberos Secured Proxies Authenticator
+
+[Service]
+Type=simple
+ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/cntlm-gss -f -c @SYSCONFDIR@/cntlm-gss.conf
+WorkingDirectory=%T
+KillSignal=SIGINT
+
+[Install]
+WantedBy=default.target

@@ -971,10 +971,10 @@ int main(int argc, char **argv) {
 
 		head = new(MINIBUF_SIZE);
 		strlcpy(head, tmp, MINIBUF_SIZE);
-		strlcat(head, "\\Cntlm\\cntlm.ini", MINIBUF_SIZE);
+		strlcat(head, "\\Cntlm\\cntlm-gss.ini", MINIBUF_SIZE);
 		default_config = head;
 #else
-		default_config = SYSCONFDIR "/cntlm.conf";
+		default_config = SYSCONFDIR "/cntlm-gss.conf";
 #endif
 		cf = config_open(default_config);
 		if (debug) {

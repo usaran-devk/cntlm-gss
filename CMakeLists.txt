@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(cntlm-gss C)
+include(GNUInstallDirs)
 
 option(ENABLE_KERBEROS "Enable Kerberos support" ON)
 option(WITH_GSS_STUB "Build with built-in stub of libgssapi_krb5.so.2 (usefull for cross-compile)" OFF)
@@ -14,10 +15,7 @@ string(STRIP "${VERSION}" VERSION)
 
 message(STATUS "*** Build ${PROJECT_NAME} ver. ${VERSION}")
 
-if(NOT DEFINED SYSCONFDIR)
-    set(SYSCONFDIR "/etc")
-endif()
-list(APPEND _defines "SYSCONFDIR=\"${SYSCONFDIR}\"")
+set(SYSCONFDIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
 
 if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
     set(BIG_ENDIAN TRUE)
@@ -37,6 +35,16 @@ check_type_size("socklen_t" HAVE_SOCKLEN_T)
 
 configure_file(config.h.in config.h)
 list(APPEND _includes ${CMAKE_BINARY_DIR})
+
+configure_file(doc/cntlm-gss.conf.in cntlm-gss.conf @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/cntlm-gss.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR})
+
+configure_file(doc/cntlm-gss.service.in cntlm-gss.service @ONLY)
+install(FILES
+    ${CMAKE_BINARY_DIR}/cntlm-gss.service
+    README README.md COPYRIGHT LICENSE
+    DESTINATION ${CMAKE_INSTALL_DOCDIR}
+)
 
 find_package(Threads REQUIRED)
 list(APPEND _libs ${CMAKE_THREAD_LIBS_INIT})
