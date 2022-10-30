@@ -307,7 +307,8 @@ int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials, char** bu
 /**
  * checks if a default cached credential is cached
  */
-int check_credential() {
+int check_credential(void)
+{
 	OM_uint32 min_stat;
 	gss_name_t name;
 	OM_uint32 lifetime;

@@ -31,7 +31,7 @@
 #include <netdb.h>
 #include <sys/socket.h>
 
-extern int h_errno;
+//extern int h_errno;
 
 #include "utils.h"
 #include "globals.h"
