@@ -1463,6 +1463,8 @@ int main(int argc, char **argv) {
 	 * If we fail, exit with error.
 	 */
 	if (strlen(cpidfile)) {
+		int len;
+
 		umask(0);
 		cd = open(cpidfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (cd < 0) {
@@ -1473,6 +1475,11 @@ int main(int argc, char **argv) {
 		tmp = new(50);
 		snprintf(tmp, 50, "%d\n", getpid());
 		_unused = write(cd, tmp, strlen(tmp));
+		n = write(cd, tmp, (len = strlen(tmp)));
+		if (n != len) {
+			syslog(LOG_ERR, "Error writing to the PID file\n");
+			myexit(1);
+		}
 		free(tmp);
 		close(cd);
 	}
