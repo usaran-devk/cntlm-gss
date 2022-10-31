@@ -2,7 +2,7 @@
 #define _CONFIG_H
 
 #define VERSION "${VERSION}"
-#define SYSCONFDIR "${SYSCONFDIR}"
+#define SYSCONFDIR "${SYSCONF_INSTALL_DIR}"
 #cmakedefine BIG_ENDIAN
 #cmakedefine HAVE_STRDUP
 #cmakedefine HAVE_SOCKLEN_T

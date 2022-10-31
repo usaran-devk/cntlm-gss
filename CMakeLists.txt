@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.20)
-project(cntlm-gss C)
+cmake_minimum_required(VERSION 2.8)
+project(cntlm C)
 include(GNUInstallDirs)
 
 option(ENABLE_KERBEROS "Enable Kerberos support" ON)
@@ -15,15 +15,34 @@ string(STRIP "${VERSION}" VERSION)
 
 message(STATUS "*** Build ${PROJECT_NAME} ver. ${VERSION}")
 
-set(SYSCONFDIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
-
+# CMAKE_C_BYTE_ORDER: from version 3.20
 if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
     set(BIG_ENDIAN TRUE)
 elseif(CMAKE_C_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
     set(BIG_ENDIAN FALSE)
 else()
-    message(FATAL_ERROR "Cannot detect byte order, CMAKE_C_BYTE_ORDER='${CMAKE_C_BYTE_ORDER}'")
+    try_run(_big_endian _big_endian_compiled ${CMAKE_CURRENT_BINARY_DIR}/_big_endian
+        SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/config/big_endian.c
+    )
+
+    if(_big_endian_compiled AND NOT "${_big_endian}" STREQUAL "FAILED_TO_RUN")
+        if(${_big_endian} EQUAL 0)
+            set(BIG_ENDIAN TRUE)
+        else()
+            set(BIG_ENDIAN FALSE)
+        endif()
+    else()
+        message(FATAL_ERROR "Cannot detect byte order, CMAKE_C_BYTE_ORDER='${CMAKE_C_BYTE_ORDER}' and big_endian test FAILED_TO_RUN!")
+    endif()
 endif()
+
+if (CMAKE_VERSION VERSION_LESS "3.1")
+    if (CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        set (CMAKE_C_FLAGS "-std=gnu99 ${CMAKE_C_FLAGS}")
+    endif ()
+else ()
+    set (CMAKE_C_STANDARD 99)
+endif ()
 
 include(CheckSymbolExists)
 include(CheckTypeSize)
@@ -36,14 +55,21 @@ check_type_size("socklen_t" HAVE_SOCKLEN_T)
 configure_file(config.h.in config.h)
 list(APPEND _includes ${CMAKE_BINARY_DIR})
 
-configure_file(doc/cntlm-gss.conf.in cntlm-gss.conf @ONLY)
-install(FILES ${CMAKE_BINARY_DIR}/cntlm-gss.conf DESTINATION ${CMAKE_INSTALL_SYSCONFDIR})
+if(NOT DEFINED SYSCONF_INSTALL_DIR)
+    set(SYSCONF_INSTALL_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
+endif()
+configure_file(doc/cntlm.conf.in cntlm.conf @ONLY)
+install(FILES ${CMAKE_BINARY_DIR}/cntlm.conf DESTINATION ${SYSCONF_INSTALL_DIR})
 
-configure_file(doc/cntlm-gss.service.in cntlm-gss.service @ONLY)
+configure_file(doc/cntlm.service.in cntlm.service @ONLY)
+#install(FILES
+#    ${CMAKE_BINARY_DIR}/cntlm.service
+#    README README.md COPYRIGHT LICENSE
+#    DESTINATION ${CMAKE_INSTALL_DOCDIR}
+#)
 install(FILES
-    ${CMAKE_BINARY_DIR}/cntlm-gss.service
-    README README.md COPYRIGHT LICENSE
-    DESTINATION ${CMAKE_INSTALL_DOCDIR}
+    doc/cntlm.1
+    DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
 )
 
 find_package(Threads REQUIRED)
@@ -73,13 +99,13 @@ if(ENABLE_KERBEROS)
     endif()
 endif()
 
-add_executable(cntlm-gss ${_sources})
-target_link_libraries(cntlm-gss ${_libs})
-target_include_directories(cntlm-gss PRIVATE ${_includes})
-target_compile_options(cntlm-gss PRIVATE ${_cflags})
-target_compile_definitions(cntlm-gss PRIVATE ${_defines})
+add_executable(cntlm ${_sources})
+target_link_libraries(cntlm ${_libs})
+target_include_directories(cntlm PRIVATE ${_includes})
+target_compile_options(cntlm PRIVATE ${_cflags})
+target_compile_definitions(cntlm PRIVATE ${_defines})
 
-set_target_properties(cntlm-gss
+set_target_properties(cntlm
     PROPERTIES
         SKIP_BUILD_RPATH TRUE
 )
@@ -88,6 +114,6 @@ set(compile_options -Wall -Wextra -Wpedantic -Werror)
 #if (CMAKE_COMPILER_IS_GNUCC)
 #    list(APPEND compile_options -Wno-error=unused-result)
 #endif()
-target_compile_options(cntlm-gss PRIVATE ${compile_options})
+target_compile_options(cntlm PRIVATE ${compile_options})
 
-install(TARGETS cntlm-gss)
+install(TARGETS cntlm DESTINATION sbin)
