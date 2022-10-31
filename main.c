@@ -31,6 +31,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <unistd.h>
+#include <grp.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -1447,6 +1448,11 @@ int main(int argc, char **argv) {
 				}
 				nuid = pw->pw_uid;
 				ngid = pw->pw_gid;
+			}
+			/* drop groups before changing uid per POSIX POS36-C */
+			if ((setgroups(0, NULL) < 0) && (errno != EPERM)) {
+				syslog(LOG_ERR, "drop groups: setgroups failed: %s, Terminating\n", strerror(errno));
+				myexit(1);
 			}
 			_unused = setgid(ngid);
 			n = setuid(nuid);
