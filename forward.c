@@ -407,7 +407,7 @@ beginning:
 	rsocket[1] = wsocket[0] = &sd;
 
 	if (acl_host_check(rules_forward, request->hostname) == ACL_DENY) {
-		syslog(LOG_ERR, "Denied forwad for host %s\n", request->hostname);
+		syslog(LOG_ERR, "%s Denied forwad to host %s\n", inet_ntoa(caddr.sin_addr), request->hostname);
 
 		tmp = gen_denied_page(request->hostname);
 		_unused = write(cd, tmp, strlen(tmp));
@@ -526,7 +526,7 @@ beginning:
 					pthread_mutex_lock(&parent_mtx);
 					if (acl_host_check(rules_forward, data[0]->hostname) == ACL_DENY) {
 						tmp = strdup(data[0]->hostname);
-						syslog(LOG_INFO, "Allow forward for host %s as redirect from %s\n", tmp, hostname);
+						syslog(LOG_INFO, "%s Allow forward for host %s as redirect from %s\n", inet_ntoa(caddr.sin_addr), tmp, hostname);
 						tmp = strdup(data[0]->hostname);
 						rules_forward = plist_insert(rules_forward, ACL_ALLOW, tmp);
 					}
