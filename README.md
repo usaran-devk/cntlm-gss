@@ -10,7 +10,7 @@ Dependency: [Kerberos](http://web.mit.edu/kerberos/).
 * HTTP-1.1-persistent-connections-with-HTTP-1.0-clients patch applied
 * Many bug from warnings fixed, warning-as-error now
 * allow/deny list added as [forward] config section to limit hosts available through parent proxy (with optional auto-allow for HTTP redirects)
-* SIGINT signal can be used to fast restart w/o wait cosing connections
+* SIGINT signal can be used to fast restart w/o wait closing connections
 
 ### Build
 **CMake**
@@ -19,7 +19,7 @@ $ mkdir .build
 $ cd .build
 
 $ cmake -DCMAKE_BUILD_TYPE="Release" ..
-...or...
+...or for use cross-compiler w/o access to gss headers...
 $ cmake -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX=/ -DCMAKE_TOOLCHAIN_FILE=/path/to/toolchain.cmake -DWITH_GSS_STUB=ON ..
 
 $ cmake --build .
@@ -61,3 +61,5 @@ Allow=*
 The username, domain and password are all unset.
 
 I could start it with `/home/me/usr/opt/cntlm-0.92.3/cntlm -c /home/me/usr/opt/cntlm-0.92.3/cntlm.conf` .
+
+[doc/add-user-keytab.sh](doc/add-user-keytab.sh) script might be usefull to install cntlm keytab file on any system.
