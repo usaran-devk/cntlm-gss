@@ -2,7 +2,7 @@
 
 set -e
 
-login="${1:?Username is requred}"
+login="${1:?Domain login is requred}"
 user="${2:-cntlm}"
 
 if ! ktutil=$(type -p ktutil 2>/dev/null) ; then
