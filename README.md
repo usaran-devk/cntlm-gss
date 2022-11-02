@@ -4,9 +4,16 @@ Works on a Ubuntu 12.04 box, at least for me.
 
 Dependency: [Kerberos](http://web.mit.edu/kerberos/).
 
-If Kerberos is compiled to a different location, say, $HOME/usr, compile Cntlm with
+### Main changes in this fork
+* fixed [issue](https://github.com/metaphox/cntlm-gss/issues/2) for big number of group memberships in AD
+* [POSIX POS36-C](https://wiki.sei.cmu.edu/confluence/display/c/POS36-C.+Observe+correct+revocation+order+while+relinquishing+privileges) issue fixed
+* HTTP-1.1-persistent-connections-with-HTTP-1.0-clients patch applied
+* Many bug from warnings fixed, warning-as-error now
+* allow/deny list added as [forward] config section to limit hosts available through parent proxy (with optional auto-allow for HTTP redirects)
+* SIGINT signal can be used to fast restart w/o wait cosing connections
 
-**CMake:**
+### Build
+**CMake**
 ```
 $ mkdir .build
 $ cd .build
@@ -22,14 +29,19 @@ $ cmake --build .
 $ cmake --install . --strip
 ```
 
-**Legacy:**
-`./configure --enable-kerberos`
+**Legacy**
 
-`export LIBRARY_PATH=$HOME/usr/lib`
+If Kerberos is compiled to a different location, say, $HOME/usr, compile Cntlm with
 
-`export C_INCLUDE_PATH=$HOME/usr/include`
+```
+./configure --enable-kerberos
 
-`make`
+export LIBRARY_PATH=$HOME/usr/lib
+
+export C_INCLUDE_PATH=$HOME/usr/include
+
+make
+```
 
 To run it, try `cntlm --help` or `cntlm -v` and fix whatever it complains.
 
