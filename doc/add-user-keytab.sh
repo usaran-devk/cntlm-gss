@@ -56,7 +56,7 @@ install -d -m 0700 -o "$user" -g "$egid" "$configs_dir"
 
 rm -f "$keytab"
 
-/usr/lib/mit/bin/ktutil  <<EOT
+"$ktutil"  <<EOT
 addent -password -p $principal -k 1 -f
 $pass
 list
