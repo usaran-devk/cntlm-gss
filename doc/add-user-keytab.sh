@@ -48,13 +48,16 @@ if ! [[ "$principal" = *@* ]] ; then
     principal="$login@$default_realm"
 fi
 
-IFS= read -s -p "Enter passford for $principal : " pass
+IFS= read -s -p "Enter password for $principal : " pass
+
+echo
 
 configs_dir=$(dirname "$keytab")
-
 install -d -m 0700 -o "$user" -g "$egid" "$configs_dir"
 
 rm -f "$keytab"
+
+echo "*** Create '$keytab' for user $user using principal $principal"
 
 "$ktutil"  <<EOT
 addent -password -p $principal -k 1 -f
