@@ -1,9 +1,12 @@
 cmake_minimum_required(VERSION 2.8.12)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 project(cntlm C)
+
 include(GNUInstallDirs)
 
 option(ENABLE_KERBEROS "Enable Kerberos support" ON)
 option(WITH_GSS_STUB "Build with built-in stub of libgssapi_krb5.so.2 (usefull for cross-compile)" OFF)
+option(WITH_SYSTEMD "Generate unit file depend on given version, use -DSYSTEMD_VERSION=<ver> to provide required version" ON)
 
 set(_cflags)
 set(_defines)
@@ -21,7 +24,7 @@ if(CMAKE_C_BYTE_ORDER STREQUAL "BIG_ENDIAN")
 elseif(CMAKE_C_BYTE_ORDER STREQUAL "LITTLE_ENDIAN")
     set(BIG_ENDIAN FALSE)
 else()
-    try_run(_big_endian _big_endian_compiled ${CMAKE_CURRENT_BINARY_DIR}/_big_endian
+    try_run(_big_endian _big_endian_compiled ${CMAKE_BINARY_DIR}/_big_endian
         SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/config/big_endian.c
     )
 
@@ -58,15 +61,16 @@ list(APPEND _includes ${CMAKE_BINARY_DIR})
 if(NOT DEFINED SYSCONF_INSTALL_DIR)
     set(SYSCONF_INSTALL_DIR "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
 endif()
-configure_file(doc/cntlm.conf.in cntlm.conf @ONLY)
+
+configure_file(doc/cntlm.conf.in ${CMAKE_BINARY_DIR}/cntlm.conf @ONLY)
 install(FILES ${CMAKE_BINARY_DIR}/cntlm.conf DESTINATION ${SYSCONF_INSTALL_DIR})
 
-configure_file(doc/cntlm.service.in cntlm.service @ONLY)
-#install(FILES
-#    ${CMAKE_BINARY_DIR}/cntlm.service
-#    README README.md COPYRIGHT LICENSE
-#    DESTINATION ${CMAKE_INSTALL_DOCDIR}
-#)
+include(cmake/systemd.cmake)
+
+install(FILES
+    README README.md COPYRIGHT LICENSE doc/cntlm.conf
+    DESTINATION ${CMAKE_INSTALL_DOCDIR}
+)
 install(FILES
     doc/cntlm.1
     DESTINATION ${CMAKE_INSTALL_MANDIR}/man1
@@ -99,21 +103,26 @@ if(ENABLE_KERBEROS)
     endif()
 endif()
 
-add_executable(cntlm ${_sources})
-target_link_libraries(cntlm ${_libs})
-target_include_directories(cntlm PRIVATE ${_includes})
-target_compile_options(cntlm PRIVATE ${_cflags})
-target_compile_definitions(cntlm PRIVATE ${_defines})
+list(APPEND _cflags -Wall -Wextra -Wpedantic -Werror)
+#if (CMAKE_COMPILER_IS_GNUCC)
+#    list(APPEND _cflags -Wno-error=unused-result)
+#endif()
 
-set_target_properties(cntlm
+add_executable(${PROJECT_NAME} ${_sources})
+target_link_libraries(${PROJECT_NAME} ${_libs})
+target_include_directories(${PROJECT_NAME} PRIVATE ${_includes})
+target_compile_options(${PROJECT_NAME} PRIVATE ${_cflags})
+target_compile_definitions(${PROJECT_NAME} PRIVATE ${_defines})
+
+set_target_properties(${PROJECT_NAME}
     PROPERTIES
         SKIP_BUILD_RPATH TRUE
 )
 
-set(compile_options -Wall -Wextra -Wpedantic -Werror)
-#if (CMAKE_COMPILER_IS_GNUCC)
-#    list(APPEND compile_options -Wno-error=unused-result)
-#endif()
-target_compile_options(cntlm PRIVATE ${compile_options})
+install(TARGETS ${PROJECT_NAME} DESTINATION ${CMAKE_INSTALL_SBINDIR})
 
-install(TARGETS cntlm DESTINATION sbin)
+install(FILES doc/add-user-keytab.sh
+    DESTINATION ${CMAKE_INSTALL_SBINDIR}
+    RENAME "cntlm-keytab-install"
+    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+)

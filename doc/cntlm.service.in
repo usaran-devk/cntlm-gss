@@ -2,10 +2,59 @@
 Description=CNTLM HTTP Accelerator For NTLM/Kerberos Secured Proxies Authenticator
 
 [Service]
-Type=simple
-ExecStart=@CMAKE_INSTALL_FULL_BINDIR@/cntlm-gss -f -c @SYSCONFDIR@/cntlm-gss.conf
+Type=forking
+User=cntlm
+ExecStart=@CMAKE_INSTALL_FULL_SBINDIR@/cntlm -c @SYSCONF_INSTALL_DIR@/cntlm.conf
 WorkingDirectory=%T
 KillSignal=SIGINT
+#
+# hardenig, check https://docs.arbitrary.ch/security/systemd.html for reference
+# investigated by kirill.andrienko@kaspersky.com
+# filtered for version @SYSTEMD_VERSION@
+#systemd 248+
+#ExecPaths=/etc/cntlm
+AmbientCapabilities=
+CapabilityBoundingSet=
+CapabilityBoundingSet=CAP_NET_RAW
+DeviceAllow=
+DevicePolicy=closed
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+#systemd 248+
+#NoExecPaths=/
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateNetwork=no
+PrivateUsers=yes
+ProcSubset=pid
+ProtectClock=yes
+ProtectControlGroups=yes
+ProtectHome=yes
+ProtectHostname=yes
+ProtectKernelLogs=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+ProtectProc=invisible
+ProtectSystem=full
+RemoveIPC=yes
+RestrictAddressFamilies=AF_INET
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+#systemd 249+
+SocketBindAllow=tcp:3128
+#systemd 249+
+SocketBindDeny=any
+SystemCallArchitectures=native
+SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privileged @raw-io @resources @reboot @swap
+UMask=0077
+
+#use carefully - any proxy exception address should be additionally written below
+#IPAddressAllow=127.0.0.0/8 ::1/128 10.0.0.0/8 77.74.177.125.32
+#IPAddressDeny=any
+#PrivateTmp=yes #brokes user-keytab functionality
+#ProtectSystem=strict #brokes krb5 interactions
+#systemd any
 
 [Install]
 WantedBy=default.target
