@@ -31,6 +31,8 @@ $ cmake --install . --strip
 
 **Legacy**
 
+**!WARNING!** I'm sorry but this method of configuring is obsolated and will be removed soon...
+
 If Kerberos is compiled to a different location, say, $HOME/usr, compile Cntlm with
 
 ```
@@ -48,10 +50,10 @@ To run it, try `cntlm --help` or `cntlm -v` and fix whatever it complains.
 I have only the following lines in my ctnlm.conf file:
 
 ```
-Auth        GSS
-Proxy		proxy.server.domain.com:3128
-NoProxy		localhost, 127.0.0.*, 10.*, 192.168.*
-Listen		3128
+Auth GSS
+Proxy proxy.server.domain.com:3128
+NoProxy localhost, 127.0.0.*, 10.*, 192.168.*
+Listen 3128
 
 [forward]
 #AllowRedirects  yes

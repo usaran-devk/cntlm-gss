@@ -1,5 +1,6 @@
 [Unit]
 Description=CNTLM HTTP Accelerator For NTLM/Kerberos Secured Proxies Authenticator
+After=network.target auditd.service
 
 [Service]
 Type=forking
