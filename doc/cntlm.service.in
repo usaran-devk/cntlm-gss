@@ -6,7 +6,7 @@ After=network.target auditd.service
 Type=forking
 User=cntlm
 ExecStart=@CMAKE_INSTALL_FULL_SBINDIR@/cntlm -c @SYSCONF_INSTALL_DIR@/cntlm.conf
-WorkingDirectory="@SYSTEMD_WORKINGDIR@"
+WorkingDirectory=@SYSTEMD_WORKINGDIR@
 KillSignal=SIGINT
 
 #
@@ -49,7 +49,7 @@ SocketBindAllow=tcp:3128
 SocketBindDeny=any
 SystemCallArchitectures=native
 SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privileged @raw-io @resources @reboot @swap
-UMask=0077
+#UMask=0077
 
 #systemd any
 #use carefully - any proxy exception address should be additionally written below
