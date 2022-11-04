@@ -2,6 +2,16 @@ if(NOT WITH_SYSTEMD)
     return()
 endif()
 
+
+if(NOT DEFINED SYSTEMD_INSTALL_DIR)
+    set(SYSTEMD_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/systemd/system")
+endif()
+
+if(NOT DEFINED SYSTEMD_WORKINGDIR)
+    #set(SYSTEMD_WORKINGDIR "${CMAKE_INSTALL_LOCALSTATEDIR}/log/cntlm")
+    set(SYSTEMD_WORKINGDIR "%T")
+endif()
+
 if(NOT DEFINED SYSTEMD_VERSION)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(SYSTEMD libsystemd)
@@ -39,17 +49,12 @@ foreach(_line IN LISTS _lines)
         endif()
     endif()
 
-    if(NOT _skip_lines AND NOT _ver STREQUAL "any")
-        list(APPEND _result ${_line})
+    if(NOT _skip_lines)
         set(_result_str "${_result_str}${_line}\n")
     endif()
 endforeach()
 
 file(WRITE "${cntlm_service_file}" ${_result_str})
-
-if(NOT DEFINED SYSTEMD_INSTALL_DIR)
-    set(SYSTEMD_INSTALL_DIR "${CMAKE_INSTALL_PREFIX}/lib/systemd/system")
-endif()
 
 install(FILES
     ${cntlm_service_file}

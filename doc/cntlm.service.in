@@ -6,8 +6,9 @@ After=network.target auditd.service
 Type=forking
 User=cntlm
 ExecStart=@CMAKE_INSTALL_FULL_SBINDIR@/cntlm -c @SYSCONF_INSTALL_DIR@/cntlm.conf
-WorkingDirectory=%T
+WorkingDirectory="@SYSTEMD_WORKINGDIR@"
 KillSignal=SIGINT
+
 #
 # hardenig, check https://docs.arbitrary.ch/security/systemd.html for reference
 # investigated by kirill.andrienko@kaspersky.com
@@ -50,12 +51,12 @@ SystemCallArchitectures=native
 SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privileged @raw-io @resources @reboot @swap
 UMask=0077
 
+#systemd any
 #use carefully - any proxy exception address should be additionally written below
 #IPAddressAllow=127.0.0.0/8 ::1/128 10.0.0.0/8 77.74.177.125.32
 #IPAddressDeny=any
 #PrivateTmp=yes #brokes user-keytab functionality
 #ProtectSystem=strict #brokes krb5 interactions
-#systemd any
 
 [Install]
 WantedBy=default.target
