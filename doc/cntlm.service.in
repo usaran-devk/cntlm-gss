@@ -53,7 +53,7 @@ UMask=0077
 
 #systemd any
 #use carefully - any proxy exception address should be additionally written below
-#IPAddressAllow=127.0.0.0/8 ::1/128 10.0.0.0/8 77.74.177.125.32
+#IPAddressAllow=127.0.0.0/8 ::1/128 10.0.0.0/8
 #IPAddressDeny=any
 #PrivateTmp=yes #brokes user-keytab functionality
 #ProtectSystem=strict #brokes krb5 interactions
