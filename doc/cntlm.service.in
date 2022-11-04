@@ -31,7 +31,7 @@ PrivateUsers=yes
 ProcSubset=pid
 ProtectClock=yes
 ProtectControlGroups=yes
-ProtectHome=yes
+#?ProtectHome=yes
 ProtectHostname=yes
 ProtectKernelLogs=yes
 ProtectKernelModules=yes
@@ -39,7 +39,7 @@ ProtectKernelTunables=yes
 ProtectProc=invisible
 ProtectSystem=full
 RemoveIPC=yes
-RestrictAddressFamilies=AF_INET
+#?RestrictAddressFamilies=AF_INET
 RestrictNamespaces=yes
 RestrictRealtime=yes
 RestrictSUIDSGID=yes
@@ -49,7 +49,7 @@ SocketBindAllow=tcp:3128
 SocketBindDeny=any
 SystemCallArchitectures=native
 SystemCallFilter=~@clock @cpu-emulation @debug @module @mount @obsolete @privileged @raw-io @resources @reboot @swap
-#UMask=0077
+UMask=0077
 
 #systemd any
 #use carefully - any proxy exception address should be additionally written below
