@@ -9,7 +9,8 @@
     //"C_Cpp.loggingLevel": "Debug",
     "cmake.configureArgs": [
         "-DCMAKE_VERBOSE_MAKEFILE=TRUE",
-        "-DCMAKE_INSTALL_PREFIX=/"
+        "-DCMAKE_INSTALL_PREFIX=/",
+        "-DSYSTEMD_VERSION=251"
         // "-DCMAKE_C_COMPILER_LAUNCHER=ccache",
         // "-DCMAKE_CXX_COMPILER_LAUNCHER=ccache"
     ]

@@ -8,7 +8,7 @@
             "name": "(gdb) Execute",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/.build/cntlm-gss",
+            "program": "${workspaceFolder}/.build/cntlm",
             "args": [
                 "-v", 
                 "-f", 
