@@ -12,6 +12,14 @@ Dependency: [Kerberos](http://web.mit.edu/kerberos/).
 * allow/deny list added as [forward] config section to limit hosts available through parent proxy (with optional auto-allow for HTTP redirects)
 * SIGINT signal can be used to fast restart w/o wait closing connections
 
+### Install
+Prebuilt packages is available on Open Build Service in project [home:biserov:cntlm-gss](https://build.opensuse.org/package/show/home:biserov:cntlm-gss/cntlm) for the next OS list:
+* OpenSuSE (Tumbleweed, Leap)
+* Fedora, CentOS
+* Debian, Ubuntu, Raspbian
+
+Visit "[Download package](https://software.opensuse.org//download.html?project=home%3Abiserov%3Acntlm-gss&package=cntlm)" page and follow provided instructions.
+
 ### Build
 **CMake**
 ```
