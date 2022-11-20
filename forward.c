@@ -400,7 +400,8 @@ rr_data_t forward_request(void *thread_data, rr_data_t request) {
 	struct sockaddr_in caddr = ((struct thread_arg_s *)thread_data)->addr;
 
 beginning:
-	sd = was_cached = noauth = authok = conn_alive = proxy_alive = 0;
+	was_cached = noauth = authok = conn_alive = proxy_alive = 0;
+	sd = -1;
 
 	rsocket[0] = wsocket[1] = &cd;
 	rsocket[1] = wsocket[0] = &sd;
@@ -795,7 +796,7 @@ bailout:
 		printf("\nThread finished.\n");
 	}
 
-	if (proxy_alive && authok && !ntlmbasic && !so_closed(sd)) {
+	if (proxy_alive && authok && !ntlmbasic && (sd >= 0) && !so_closed(sd)) {
 		if (debug)
 			printf("Storing the connection for reuse (%d:%d).\n", cd, sd);
 		pthread_mutex_lock(&connection_mtx);
@@ -803,7 +804,9 @@ bailout:
 		pthread_mutex_unlock(&connection_mtx);
 	} else {
 		free(tcreds);
-		close(sd);
+		if (sd >=0) {
+			close(sd);
+		}
 	}
 
 	return rc;
