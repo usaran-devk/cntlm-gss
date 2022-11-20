@@ -256,8 +256,7 @@ int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials, char** bu
 			credentials->haskrb |= check_credential();
 			if (!(credentials->haskrb & KRB_CREDENTIAL_AVAILABLE)){
 				//no credential -> no token
-				if (debug)
-					syslog(LOG_INFO, "No valid credential available\n");
+				syslog(LOG_ERR, "No valid credential available\n");
 				return 0;
 			}
 //		}
@@ -293,8 +292,7 @@ int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials, char** bu
 	} else {
 		credentials->haskrb = KRB_KO;
 
-		if (debug)
-			syslog(LOG_INFO, "No valid token acquired for %s\n", service_name);
+		syslog(LOG_ERR, "No valid token acquired for %s\n", service_name);
 
 		rc=0;
 	}

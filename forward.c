@@ -188,7 +188,6 @@ int proxy_authenticate(int *sd, rr_data_t request, rr_data_t response, struct au
 	}
 	else {
 #endif
-
 		strcpy(buf, "NTLM ");
 		len = ntlm_request(&tmp, credentials);
 		if (len) {
@@ -444,9 +443,7 @@ beginning:
 		tcreds = new_auth();
 		sd = proxy_connect(tcreds);
 		if (sd <= 0) {
-			tmp = gen_502_page(request->http, "Parent proxy unreacheable");
-			_unused = write(cd, tmp, strlen(tmp));
-			free(tmp);
+			send_502_page(cd, "Parent proxy unreacheable", NULL);
 			rc = (void *)-1;
 			goto bailout;
 		}
@@ -504,8 +501,8 @@ beginning:
 				if (!headers_recv(*rsocket[loop], data[loop])) {
 					free_rr_data(data[0]);
 					free_rr_data(data[1]);
+					send_502_page(cd, "headers_recv", "headers_recv: loop %d", loop);
 					rc = (void *)-1;
-					/* error page */
 					goto bailout;
 				}
 			}
@@ -611,12 +608,10 @@ shortcut:
 			 */
 			if (loop == 0 && data[0]->req && !authok && !noauth) {
 				if (!proxy_authenticate(wsocket[0], data[0], data[1], tcreds)) {
-					if (debug)
-						printf("Proxy auth connection error.\n");
+					send_502_page(cd, "Proxy auth connection error", NULL);
 					free_rr_data(data[0]);
 					free_rr_data(data[1]);
 					rc = (void *)-1;
-					/* error page */
 					goto bailout;
 				}
 
@@ -728,10 +723,10 @@ shortcut:
 				 * the 3rd, final, NTLM message.
 				 */
 				if (!headers_send(*wsocket[loop], data[loop])) {
+					send_502_page(cd, "headers_send", NULL);
 					free_rr_data(data[0]);
 					free_rr_data(data[1]);
 					rc = (void *)-1;
-					/* error page */
 					goto bailout;
 				}
 			}

@@ -16,12 +16,18 @@
  * Copyright (c) 2007 David Kubicek
  *
  */
+#ifndef _PAGES_H
+#define _PAGES_H
 
 #include "utils.h"
-#include "string.h"
-#include "stdio.h"
+#include <string.h>
+#include <stdio.h>
 
 extern char *gen_407_page(const char *http);
 extern char *gen_401_page(const char *http, const char *host, int port);
 extern char *gen_denied_page(const char *ip);
+
 extern char *gen_502_page(const char *http, const char *msg);
+extern void send_502_page(int cd, const char *msg, const char *format, ...);
+
+#endif /* _PAGES_H */
