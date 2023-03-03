@@ -19,12 +19,13 @@
  *
  */
 
-#ifndef _PAGES_H
-#define _PAGES_H
-
 #include "utils.h"
-#include "string.h"
-#include "stdio.h"
+#include "pages.h"
+
+#include <stdlib.h>
+#include <syslog.h>
+#include <unistd.h>
+#include <stdarg.h>
 
 char *gen_407_page(const char *http) {
 	char *tmp;
@@ -82,4 +83,22 @@ char *gen_502_page(const char *http, const char *msg) {
 	return tmp;
 }
 
-#endif /* _PAGES_H */
+void send_502_page(int cd, const char *msg, const char *format, ...)
+{
+	int _unused __attribute__((unused));
+	char *tmp;
+	va_list args;
+
+	if (format == NULL) {
+		syslog(LOG_ERR, "502: %s", msg);
+	} else {
+		va_start(args, format);
+		vsyslog(LOG_ERR, format, args);
+		va_end(args);
+	}
+
+	tmp = gen_502_page(NULL, msg);
+	_unused = write(cd, tmp, strlen(tmp));
+	free(tmp);
+}
+

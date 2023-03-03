@@ -30,7 +30,7 @@
 #include <ctype.h>
 #include <syslog.h>
 
-#include "config/config.h"
+#include "config.h"
 #include "swap.h"
 #include "utils.h"
 #include "socket.h"
@@ -85,6 +85,20 @@ plist_t plist_add(plist_t list, unsigned long key, void *aux) {
 	t->next = tmp;
 
 	return list;
+}
+
+/*
+ * Insert a new item to a list
+ */
+plist_t plist_insert(plist_t list, unsigned long key, void *aux) {
+	plist_t tmp;
+
+	tmp = malloc(sizeof(struct plist_s));
+	tmp->key = key;
+	tmp->aux = aux;
+	tmp->next = list;
+
+	return tmp;
 }
 
 /*
@@ -148,7 +162,7 @@ void plist_dump(plist_t list) {
 /*
  * Return the pointer associated with the key.
  */
-char *plist_get(plist_t list, int key) {
+char *plist_get(plist_t list, unsigned long key) {
 	plist_t t = list;
 
 	while (t) {
@@ -478,8 +492,8 @@ void hlist_dump(hlist_t list) {
  * Standard substr. To prevent modification of the source
  * (terminating \x0), return the result in a new memory.
  */
-char *substr(const char *src, int pos, int len) {
-	int l;
+char *substr(const char *src, size_t pos, size_t len) {
+	size_t l;
 	char *tmp;
 
 	if (len == 0)
@@ -508,6 +522,7 @@ rr_data_t new_rr_data(void) {
 	data->body_len = 0;
 	data->empty = 1;
 	data->port = 0;
+	data->http_version = -1;
 	data->headers = NULL;
 	data->method = NULL;
 	data->url = NULL;
@@ -535,6 +550,7 @@ rr_data_t copy_rr_data(rr_data_t dst, rr_data_t src) {
 	dst->body_len = src->body_len;
 	dst->empty = src->empty;
 	dst->port = src->port;
+	dst->http_version = src->http_version;
 
 	if (src->headers)
 		dst->headers = hlist_dup(src->headers);
@@ -584,6 +600,7 @@ rr_data_t reset_rr_data(rr_data_t data) {
 	data->body_len = 0;
 	data->empty = 1;
 	data->port = 0;
+	data->http_version = -1;
 
 	if (data->headers) hlist_free(data->headers);
 	if (data->method) free(data->method);
@@ -623,6 +640,7 @@ void free_rr_data(rr_data_t data) {
 	if (data->http) free(data->http);
 	if (data->msg) free(data->msg);
 	if (data->body) free(data->body);
+	memset(data, 0, sizeof(struct rr_data_s));
 	free(data);
 }
 
@@ -638,7 +656,7 @@ char *trimr(char *buf) {
 	return buf;
 }
 
-#if config_strdup == 0
+#ifndef HAVE_STRDUP
 /*
  * Our implementation of non-POSIX strdup()
  */
@@ -732,7 +750,7 @@ char *new(size_t size) {
  * Self-explanatory.
  */
 char *lowercase(char *str) {
-	int i;
+    size_t i;
 
 	for (i = 0; i < strlen(str); ++i)
 		str[i] = tolower(str[i]);
@@ -744,7 +762,7 @@ char *lowercase(char *str) {
  * Self-explanatory.
  */
 char *uppercase(char *str) {
-	int i;
+    size_t i;
 
 	for (i = 0; i < strlen(str); ++i)
 		str[i] = toupper(str[i]);
@@ -772,7 +790,7 @@ int unicode(char **dst, char *src) {
 
 char *urlencode(const char *str) {
 	char *tmp;
-	int i, pos;
+    size_t i, pos;
 
 	tmp = new(strlen(str)*3 + 1);
 	for (pos = 0, i = 0; i < strlen(str); ++i) {
@@ -789,7 +807,7 @@ char *urlencode(const char *str) {
 
 char *printmem(char *src, size_t len, int bitwidth) {
 	char *tmp;
-	int i;
+	size_t i;
 
 	tmp = new(2*len+1);
 	for (i = 0; i < len; ++i) {

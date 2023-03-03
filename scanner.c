@@ -40,9 +40,10 @@
  */
 int scanner_hook(rr_data_t request, rr_data_t response, struct auth_s *credentials, int cd, int *sd, long maxKBs) {
 	char *buf, *line, *pos, *tmp, *pat, *post, *isaid, *uurl;
-	int bsize, lsize, size, len, i, w, nc;
+	int bsize, lsize, size, len, i, nc;
 	rr_data_t newreq, newres;
 	plist_t list;
+	int _unused __attribute__((unused));
 
 	int ok = 1;
 	int done = 0;
@@ -152,7 +153,7 @@ int scanner_hook(rr_data_t request, rr_data_t response, struct auth_s *credentia
 						headers_initiated = 1;
 						tmp = new(MINIBUF_SIZE);
 						snprintf(tmp, MINIBUF_SIZE, "%s 200 OK\r\n", request->http);
-						w = write(cd, tmp, strlen(tmp));
+						_unused = write(cd, tmp, strlen(tmp));
 						free(tmp);
 					}
 
@@ -168,8 +169,8 @@ int scanner_hook(rr_data_t request, rr_data_t response, struct auth_s *credentia
 					if (!done) {
 						tmp = new(MINIBUF_SIZE);
 						progress = atol(line+12);
-						snprintf(tmp, MINIBUF_SIZE, "ISA-Scanner: %ld of %ld\r\n", progress, filesize);
-						w = write(cd, tmp, strlen(tmp));
+						_unused = snprintf(tmp, MINIBUF_SIZE, "ISA-Scanner: %ld of %ld\r\n", progress, filesize);
+						_unused = write(cd, tmp, strlen(tmp));
 						free(tmp);
 					}
 

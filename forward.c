@@ -27,10 +27,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <strings.h>
+#include <fnmatch.h>
 
 #include "utils.h"
 #include "globals.h"
 #include "auth.h"
+#include "acl.h"
 #include "http.h"
 #include "socket.h"
 #include "ntlm.h"
@@ -44,6 +46,24 @@
 
 int parent_curr = 0;
 pthread_mutex_t parent_mtx = PTHREAD_MUTEX_INITIALIZER;
+
+plist_t rules_forward = NULL;
+int forward_allow_redirects = 0;
+
+/*
+ * Find ACL for hostname in rules
+ */
+enum acl_t acl_host_check(plist_t rules, const char *hostname)
+{
+	while (rules) {
+		//if ((strcmp(rules->aux, "*") == 0) || (strcasecmp(rules->aux, hostname) == 0)) {
+		if (fnmatch(rules->aux, hostname, 0) == 0) {
+			return rules->key;
+		}
+		rules = rules->next;
+	}
+	return ACL_DENY;
+}
 
 /*
  * Connect to the selected proxy. If the request fails, pick next proxy
@@ -168,7 +188,6 @@ int proxy_authenticate(int *sd, rr_data_t request, rr_data_t response, struct au
 	}
 	else {
 #endif
-
 		strcpy(buf, "NTLM ");
 		len = ntlm_request(&tmp, credentials);
 		if (len) {
@@ -219,6 +238,7 @@ int proxy_authenticate(int *sd, rr_data_t request, rr_data_t response, struct au
 
 	if (debug) {
 		printf("\nSending PROXY auth request...\n");
+		printf("HEAD: %s %s %s\n", auth->method, auth->url, auth->http);
 		hlist_dump(auth->headers);
 	}
 
@@ -361,7 +381,7 @@ bailout:
  * request is NOT freed
  */
 rr_data_t forward_request(void *thread_data, rr_data_t request) {
-	int i, w, loop, plugin, retry = 0;
+	int i, loop, plugin, retry = 0;
 	int *rsocket[2], *wsocket[2];
 	rr_data_t data[2], rc = NULL;
 	hlist_t tl;
@@ -373,16 +393,28 @@ rr_data_t forward_request(void *thread_data, rr_data_t request) {
 	int authok;
 	int noauth;
 	int was_cached;
+	int _unused __attribute__((unused));
 
 	int sd;
 	int cd = ((struct thread_arg_s *)thread_data)->fd;
 	struct sockaddr_in caddr = ((struct thread_arg_s *)thread_data)->addr;
 
 beginning:
-	sd = was_cached = noauth = authok = conn_alive = proxy_alive = 0;
+	was_cached = noauth = authok = conn_alive = proxy_alive = 0;
+	sd = -1;
 
 	rsocket[0] = wsocket[1] = &cd;
 	rsocket[1] = wsocket[0] = &sd;
+
+	if (acl_host_check(rules_forward, request->hostname) == ACL_DENY) {
+		syslog(LOG_ERR, "%s Denied forwad to host %s\n", inet_ntoa(caddr.sin_addr), request->hostname);
+
+		tmp = gen_denied_page(request->hostname);
+		_unused = write(cd, tmp, strlen(tmp));
+		free(tmp);
+		rc = (void *)-1;
+		goto bailout;
+	}
 
 	if (debug) {
 		printf("Thread processing%s...\n", retry ? " (retry)" : "");
@@ -412,9 +444,7 @@ beginning:
 		tcreds = new_auth();
 		sd = proxy_connect(tcreds);
 		if (sd <= 0) {
-			tmp = gen_502_page(request->http, "Parent proxy unreacheable");
-			w = write(cd, tmp, strlen(tmp));
-			free(tmp);
+			send_502_page(cd, "Parent proxy unreacheable", NULL);
 			rc = (void *)-1;
 			goto bailout;
 		}
@@ -472,8 +502,8 @@ beginning:
 				if (!headers_recv(*rsocket[loop], data[loop])) {
 					free_rr_data(data[0]);
 					free_rr_data(data[1]);
+					send_502_page(cd, "headers_recv", "headers_recv: loop %d", loop);
 					rc = (void *)-1;
-					/* error page */
 					goto bailout;
 				}
 			}
@@ -489,9 +519,23 @@ beginning:
 			 */
 			if (loop == 0 && hostname && data[0]->hostname
 					&& strcasecmp(hostname, data[0]->hostname)) {
+
+				if (forward_allow_redirects) {
+					pthread_mutex_lock(&parent_mtx);
+					if (acl_host_check(rules_forward, data[0]->hostname) == ACL_DENY) {
+						tmp = strdup(data[0]->hostname);
+						syslog(LOG_INFO, "%s Allow forward for host %s as redirect from %s\n", inet_ntoa(caddr.sin_addr), tmp, hostname);
+						tmp = strdup(data[0]->hostname);
+						rules_forward = plist_insert(rules_forward, ACL_ALLOW, tmp);
+					}
+					pthread_mutex_unlock(&parent_mtx);
+				}
+
 				if (debug)
 					printf("\n******* F RETURN: %s *******\n", data[0]->url);
-				if (authok)
+				if (authok && data[0]->http_version >= 11
+						&& (hlist_subcmp(data[0]->headers, "Proxy-Connection", "keep-alive")
+							|| hlist_subcmp(data[0]->headers, "Connection", "keep-alive")))
 					proxy_alive = 1;
 
 				rc = dup_rr_data(data[0]);
@@ -510,7 +554,7 @@ shortcut:
 			/*
 			 * Modify request headers.
 			 *
-			 * Try to request keep-alive for every connection. We keep them in a pool
+			 * Try to request keep-alive for every client supporting HTTP/1.1+. We keep them in a pool
 			 * for future reuse.
 			 */
 			if (loop == 0 && data[0]->req) {
@@ -519,13 +563,14 @@ shortcut:
 				 */
 				if (http_parse_basic(data[loop]->headers, "Proxy-Authorization", tcreds) > 0) {
 					if (debug)
-						printf("NTLM-to-basic: Credentials parsed: %s\\%s at %s\n", tcreds->domain, tcreds->user, tcreds->workstation);
+						printf("NTLM-to-basic: Credentials parsed: %s\\%s at %s\n",
+								tcreds->domain, tcreds->user, tcreds->workstation);
 				} else if (ntlmbasic) {
 					if (debug)
 						printf("NTLM-to-basic: Returning client auth request.\n");
 
 					tmp = gen_407_page(data[loop]->http);
-					w = write(cd, tmp, strlen(tmp));
+					_unused = write(cd, tmp, strlen(tmp));
 					free(tmp);
 
 					free_rr_data(data[0]);
@@ -544,13 +589,14 @@ shortcut:
 				}
 
 				/*
-				 * Also remove runaway P-A from the client (e.g. Basic from N-t-B), which might 
-				 * cause some ISAs to deny us, even if the connection is already auth'd.
+				 * Force proxy keep-alive if the client can handle it (HTTP >= 1.1)
 				 */
-				data[0]->headers = hlist_mod(data[0]->headers, "Proxy-Connection", "keep-alive", 1);
+				if (data[0]->http_version >= 11)
+					data[0]->headers = hlist_mod(data[0]->headers, "Proxy-Connection", "keep-alive", 1);
 
 				/*
-				 * Remove all Proxy-Authorization headers from client
+				 * Also remove runaway P-A from the client (e.g. Basic from N-t-B), which might 
+				 * cause some ISAs to deny us, even if the connection is already auth'd.
 				 */
 				while (hlist_get(data[loop]->headers, "Proxy-Authorization")) {
 					data[loop]->headers = hlist_del(data[loop]->headers, "Proxy-Authorization");
@@ -563,12 +609,10 @@ shortcut:
 			 */
 			if (loop == 0 && data[0]->req && !authok && !noauth) {
 				if (!proxy_authenticate(wsocket[0], data[0], data[1], tcreds)) {
-					if (debug)
-						printf("Proxy auth connection error.\n");
+					send_502_page(cd, "Proxy auth connection error", NULL);
 					free_rr_data(data[0]);
 					free_rr_data(data[1]);
 					rc = (void *)-1;
-					/* error page */
 					goto bailout;
 				}
 
@@ -668,8 +712,10 @@ shortcut:
 			if (plugin & PLUG_SENDHEAD) {
 				if (debug) {
 					printf("Sending headers (%d)...\n", *wsocket[loop]);
-					if (loop == 0)
+					if (loop == 0) {
+						printf("HEAD: %s %s %s\n", data[loop]->method, data[loop]->url, data[loop]->http);
 						hlist_dump(data[loop]->headers);
+					}
 				}
 
 				/*
@@ -678,10 +724,10 @@ shortcut:
 				 * the 3rd, final, NTLM message.
 				 */
 				if (!headers_send(*wsocket[loop], data[loop])) {
+					send_502_page(cd, "headers_send", NULL);
 					free_rr_data(data[0]);
 					free_rr_data(data[1]);
 					rc = (void *)-1;
-					/* error page */
 					goto bailout;
 				}
 			}
@@ -717,8 +763,14 @@ shortcut:
 			 * This way, we also tell our caller that proxy keep-alive is impossible.
 			 */
 			if (loop == 1) {
-				proxy_alive = hlist_subcmp(data[loop]->headers, "Proxy-Connection", "keep-alive");
-				if (!proxy_alive) {
+				proxy_alive = hlist_subcmp(data[1]->headers, "Proxy-Connection", "keep-alive")
+					&& data[0]->http_version >= 11;
+				if (proxy_alive) {
+					data[1]->headers = hlist_mod(data[1]->headers, "Proxy-Connection", "keep-alive", 1);
+					data[1]->headers = hlist_mod(data[1]->headers, "Connection", "keep-alive", 1);
+				} else {
+					data[1]->headers = hlist_mod(data[1]->headers, "Proxy-Connection", "close", 1);
+					data[1]->headers = hlist_mod(data[1]->headers, "Connection", "close", 1);
 					if (debug)
 						printf("PROXY CLOSING CONNECTION\n");
 					rc = (void *)-1;
@@ -744,7 +796,7 @@ bailout:
 		printf("\nThread finished.\n");
 	}
 
-	if (proxy_alive && authok && !ntlmbasic && !so_closed(sd)) {
+	if (proxy_alive && authok && !ntlmbasic && (sd >= 0) && !so_closed(sd)) {
 		if (debug)
 			printf("Storing the connection for reuse (%d:%d).\n", cd, sd);
 		pthread_mutex_lock(&connection_mtx);
@@ -752,7 +804,9 @@ bailout:
 		pthread_mutex_unlock(&connection_mtx);
 	} else {
 		free(tcreds);
-		close(sd);
+		if (sd >=0) {
+			close(sd);
+		}
 	}
 
 	return rc;
@@ -887,7 +941,7 @@ void magic_auth_detect(const char *url) {
 	tcreds = new_auth();
 	copy_auth(tcreds, g_creds, /* fullcopy */ 1);
 
-	if (!tcreds->passnt || !tcreds->passlm || !tcreds->passntlm2) {
+	if (!tcreds->passnt[0] || !tcreds->passlm[0] || !tcreds->passntlm2[0]) {
 		printf("Cannot detect NTLM dialect - password or all its hashes must be defined, try -I\n");
 		exit(1);
 	}

@@ -82,14 +82,13 @@ void display_ctx_flags(OM_uint32 flags) {
 }
 
 static void display_status_1(char *m, OM_uint32 code, int type) {
-	OM_uint32 maj_stat, min_stat;
+	OM_uint32 min_stat;
 	gss_buffer_desc msg;
 	OM_uint32 msg_ctx;
 
 	msg_ctx = 0;
 	while (1) {
-		maj_stat = gss_display_status(&min_stat, code, type, GSS_C_NULL_OID,
-				&msg_ctx, &msg);
+		gss_display_status(&min_stat, code, type, GSS_C_NULL_OID, &msg_ctx, &msg);
 		if (1)
 			syslog(LOG_ERR, "GSS-API error %s: %s\n", m, (char *) msg.value);
 		(void) gss_release_buffer(&min_stat, &msg);
@@ -257,8 +256,7 @@ int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials, char** bu
 			credentials->haskrb |= check_credential();
 			if (!(credentials->haskrb & KRB_CREDENTIAL_AVAILABLE)){
 				//no credential -> no token
-				if (debug)
-					syslog(LOG_INFO, "No valid credential available\n");
+				syslog(LOG_ERR, "No valid credential available\n");
 				return 0;
 			}
 //		}
@@ -294,8 +292,7 @@ int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials, char** bu
 	} else {
 		credentials->haskrb = KRB_KO;
 
-		if (debug)
-			syslog(LOG_INFO, "No valid token acquired for %s\n", service_name);
+		syslog(LOG_ERR, "No valid token acquired for %s\n", service_name);
 
 		rc=0;
 	}
@@ -308,7 +305,8 @@ int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials, char** bu
 /**
  * checks if a default cached credential is cached
  */
-int check_credential() {
+int check_credential(void)
+{
 	OM_uint32 min_stat;
 	gss_name_t name;
 	OM_uint32 lifetime;
@@ -341,10 +339,10 @@ int acquire_credential(struct auth_s *credentials) {
 	char *password = credentials->passnt;
 
 	//!(g_creds->haskrb & KRB_CREDENTIAL_AVAILABLE)
-	if (credentials->user && password) {
+	if (credentials->user[0] && password) {
 		char name[BUFSIZ];
 		strcpy(name, credentials->user);
-		if (credentials->domain) {
+		if (credentials->domain[0]) {
 			strcat(name, "@");
 			strcat(name, credentials->domain);
 		}

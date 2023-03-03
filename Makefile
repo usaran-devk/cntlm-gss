@@ -38,12 +38,12 @@ OSLDFLAGS=$(shell [ $(OS) = "SunOS" ] && echo "-lrt -lsocket -lnsl")
 LDFLAGS:=-lpthread $(OSLDFLAGS)
 
 ifeq ($(findstring CYGWIN,$(OS)),)
-	OBJS=utils.o ntlm.o xcrypt.o config.o socket.o acl.o auth.o http.o forward.o direct.o scanner.o pages.o main.o
+	OBJS=utils.o ntlm.o xcrypt.o config-file.o socket.o acl.o auth.o http.o forward.o direct.o scanner.o pages.o main.o
 else
-	OBJS=utils.o ntlm.o xcrypt.o config.o socket.o acl.o auth.o http.o forward.o direct.o scanner.o pages.o main.o win/resources.o
+	OBJS=utils.o ntlm.o xcrypt.o config-file.o socket.o acl.o auth.o http.o forward.o direct.o scanner.o pages.o main.o win/resources.o
 endif
 
-ENABLE_KERBEROS=$(shell grep -c ENABLE_KERBEROS config/config.h)
+ENABLE_KERBEROS=$(shell grep -c ENABLE_KERBEROS config.h)
 ifeq ($(ENABLE_KERBEROS),1)
 	OBJS+=kerberos.o
 	LDFLAGS+=-lgssapi_krb5
@@ -157,9 +157,9 @@ uninstall:
 	rm -f $(BINDIR)/$(NAME) $(MANDIR)/man1/$(NAME).1 2>/dev/null || true
 
 clean:
-	$(V)rm -f *.o cntlm cntlm.exe configure-stamp build-stamp config/config.h 2>/dev/null
+	$(V)rm -f *.o cntlm cntlm.exe configure-stamp build-stamp config.h 2>/dev/null
 	$(V)rm -f win/*.exe win/*.dll win/*.iss win/*.pdf win/cntlm.ini win/license.txt win/resouces.o 2>/dev/null
-	$(V)rm -f config/endian config/gethostname config/strdup config/socklen_t config/*.exe
+	$(V)rm -f config/big_endian config/have_gethostname config/have_socklen_t config/have_strdup config/*.exe
 	$(V)if [ -h Makefile ]; then rm -f Makefile; mv Makefile.gcc Makefile; fi
 
 distclean: clean

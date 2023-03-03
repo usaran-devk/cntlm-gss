@@ -8,6 +8,5 @@ int main(int argc, char **argv) {
 	if (strlen(tmp))
 		printf("%s", tmp);
 
-	return !(!strlen(tmp));
+	return 0;
 }
-

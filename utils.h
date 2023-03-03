@@ -28,7 +28,7 @@
 #include <pthread.h>
 #include <netinet/in.h>
 
-#include "config/config.h"
+#include "config.h"
 
 #define BUFSIZE			4096
 #define MINIBUF_SIZE		50
@@ -89,6 +89,7 @@ struct rr_data_s {
 	int body_len;
 	int empty;
 	int port;
+	int http_version;
 	char *method;
 	char *url;
 	char *rel_url;
@@ -112,10 +113,11 @@ extern void myexit(int rc);
 extern void croak(const char *msg, int console);
 
 extern plist_t plist_add(plist_t list, unsigned long key, void *aux);
+extern plist_t plist_insert(plist_t list, unsigned long key, void *aux);
 extern plist_t plist_del(plist_t list, unsigned long key);
 extern int plist_in(plist_t list, unsigned long key);
 extern void plist_dump(plist_t list);
-extern char *plist_get(plist_t list, int key);
+extern char *plist_get(plist_t list, unsigned long key);
 extern int plist_pop(plist_t *list, void **aux);
 extern int plist_count(plist_t list);
 extern plist_t plist_free(plist_t list);
@@ -132,7 +134,7 @@ extern int hlist_subcmp_all(hlist_t list, const char *key, const char *substr);
 extern hlist_t hlist_free(hlist_t list);
 extern void hlist_dump(hlist_t list);
 
-extern char *substr(const char *src, int pos, int len);
+extern char *substr(const char *src, size_t pos, size_t len);
 extern size_t strlcpy(char *dst, const char *src, size_t siz);
 extern size_t strlcat(char *dst, const char *src, size_t siz);
 extern char *trimr(char *buf);

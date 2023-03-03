@@ -31,6 +31,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 #include <unistd.h>
+#include <grp.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -46,12 +47,12 @@
  * Some helping routines like linked list manipulation substr(), memory
  * allocation, NTLM authentication routines, etc.
  */
-#include "config/config.h"
+#include "config.h"
 #include "socket.h"
 #include "utils.h"
 #include "ntlm.h"
 #include "swap.h"
-#include "config.h"
+#include "config-file.h"
 #include "acl.h"
 #include "auth.h"
 #include "http.h"
@@ -113,6 +114,9 @@ plist_t noproxy_list = NULL;			/* proxy_thread() */
  * General signal handler. If in debug mode, quit immediately.
  */
 void sighandler(int p) {
+	if (p == SIGINT)
+		quit++;
+
 	if (!quit)
 		syslog(LOG_INFO, "Signal %d received, issuing clean shutdown\n", p);
 	else
@@ -413,13 +417,14 @@ void *tunnel_thread(void *thread_data) {
 void *socks5_thread(void *thread_data) {
 	char *tmp, *thost, *tport, *uname, *upass;
 	unsigned short port;
-	int ver, r, c, i, w;
+	int ver, r, c, i;
 
 	struct auth_s *tcreds = NULL;
 	unsigned char *bs = NULL, *auths = NULL, *addr = NULL;
 	int found = -1;
 	int sd = -1;
 	int open = !hlist_count(users_list);
+	int _unused __attribute__((unused));
 
 	int cd = ((struct thread_arg_s *)thread_data)->fd;
 	struct sockaddr_in caddr = ((struct thread_arg_s *)thread_data)->addr;
@@ -465,12 +470,12 @@ void *socks5_thread(void *thread_data) {
 	if (found < 0) {
 		bs[0] = 5;
 		bs[1] = 0xFF;
-		w = write(cd, bs, 2);
+		_unused = write(cd, bs, 2);
 		goto bailout;
 	} else {
 		bs[0] = 5;
 		bs[1] = found;
-		w = write(cd, bs, 2);
+		_unused = write(cd, bs, 2);
 	}
 
 	/*
@@ -484,7 +489,7 @@ void *socks5_thread(void *thread_data) {
 		if (r != 2) {
 			bs[0] = 1;
 			bs[1] = 0xFF;		/* Unsuccessful (not supported) */
-			w = write(cd, bs, 2);
+			_unused = write(cd, bs, 2);
 			goto bailout;
 		}
 		c = bs[1];
@@ -529,7 +534,7 @@ void *socks5_thread(void *thread_data) {
 		/*
 		 * Send response
 		 */
-		w = write(cd, bs, 2);
+		_unused = write(cd, bs, 2);
 		free(upass);
 		free(uname);
 
@@ -556,7 +561,7 @@ void *socks5_thread(void *thread_data) {
 		bs[2] = 0;
 		bs[3] = 1;			/* Dummy IPv4 */
 		memset(bs+4, 0, 6);
-		w = write(cd, bs, 10);
+		_unused = write(cd, bs, 10);
 		goto bailout;
 	}
 
@@ -624,7 +629,7 @@ void *socks5_thread(void *thread_data) {
 		bs[2] = 0;
 		bs[3] = 1;			/* Dummy IPv4 */
 		memset(bs+4, 0, 6);
-		w = write(cd, bs, 10);
+		_unused = write(cd, bs, 10);
 		goto bailout;
 	} else {
 		/*
@@ -635,7 +640,7 @@ void *socks5_thread(void *thread_data) {
 		bs[2] = 0;
 		bs[3] = 1;			/* Dummy IPv4 */
 		memset(bs+4, 0, 6);
-		w = write(cd, bs, 10);
+		_unused = write(cd, bs, 10);
 	}
 
 	syslog(LOG_DEBUG, "%s SOCKS %s", inet_ntoa(caddr.sin_addr), thost);
@@ -674,7 +679,15 @@ int main(int argc, char **argv) {
 	pthread_attr_t pattr;
 	pthread_t pthr;
 	hlist_t list;
-	int i, w;
+	size_t pos;
+	int n;
+	int opt;
+	pid_t pid;
+	int _unused __attribute__((unused));
+
+#ifdef SYSCONFDIR
+	const char *default_config;
+#endif
 
 	int cd = 0;
 	int help = 0;
@@ -709,17 +722,17 @@ int main(int argc, char **argv) {
 
 	openlog("cntlm", LOG_CONS, LOG_DAEMON);
 
-#if config_endian == 0
+#ifdef BIG_ENDIAN
 	syslog(LOG_INFO, "Starting cntlm version " VERSION " for BIG endian\n");
 #else
 	syslog(LOG_INFO, "Starting cntlm version " VERSION " for LITTLE endian\n");
 #endif
 
-	while ((i = getopt(argc, argv, ":-:a:c:d:fghIl:p:r:su:vw:A:BD:F:G:HL:M:N:O:P:R:S:T:U:")) != -1) {
-		switch (i) {
+	while ((opt = getopt(argc, argv, ":-:a:c:d:fghIl:p:r:su:vw:A:BD:F:G:HL:M:N:O:P:R:S:T:U:")) != -1) {
+		switch (opt) {
 			case 'A':
 			case 'D':
-				if (!acl_add(&rules, optarg, (i == 'A' ? ACL_ALLOW : ACL_DENY)))
+				if (!acl_add(&rules, optarg, (opt == 'A' ? ACL_ALLOW : ACL_DENY)))
 					myexit(1);
 				break;
 			case 'a':
@@ -748,9 +761,9 @@ int main(int argc, char **argv) {
 					scanner_plugin = 1;
 					if (!scanner_plugin_maxsize)
 						scanner_plugin_maxsize = 1;
-					i = strlen(optarg) + 3;
-					tmp = new(i);
-					snprintf(tmp, i, "*%s*", optarg);
+					opt = strlen(optarg) + 3;
+					tmp = new(opt);
+					snprintf(tmp, opt, "*%s*", optarg);
 					scanner_agent_list = plist_add(scanner_agent_list, 0, tmp);
 				}
 				break;
@@ -795,8 +808,8 @@ int main(int argc, char **argv) {
 				 * invisible in "ps", /proc, etc.
 				 */
 				strlcpy(cpassword, optarg, MINIBUF_SIZE);
-				for (i = strlen(optarg)-1; i >= 0; --i)
-					optarg[i] = '*';
+				for (pos = strlen(optarg); pos > 0; --pos)
+					optarg[pos-1] = '*';
 				break;
 			case 'R':
 				tmp = strdup(optarg);
@@ -840,8 +853,8 @@ int main(int argc, char **argv) {
 					printf(" windows/cygwin port");
 #endif
 					printf(".\nCommand line: ");
-					for (i = 0; i < argc; ++i)
-						printf("%s ", argv[i]);
+					for (n = 0; n < argc; ++n)
+						printf("%s ", argv[n]);
 					printf("\n");
 				}
 				break;
@@ -849,10 +862,10 @@ int main(int argc, char **argv) {
 				strlcpy(cuid, optarg, MINIBUF_SIZE);
 				break;
 			case 'u':
-				i = strcspn(optarg, "@");
-				if (i != strlen(optarg)) {
-					strlcpy(cuser, optarg, MIN(MINIBUF_SIZE, i+1));
-					strlcpy(cdomain, optarg+i+1, MINIBUF_SIZE);
+				pos = strcspn(optarg, "@");
+				if (pos != strlen(optarg)) {
+					strlcpy(cuser, optarg, MIN(MINIBUF_SIZE, pos+1));
+					strlcpy(cdomain, optarg+pos+1, MINIBUF_SIZE);
 				} else {
 					strlcpy(cuser, optarg, MINIBUF_SIZE);
 				}
@@ -886,11 +899,11 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "\t-A  <address>[/<net>]\n"
 				"\t    ACL allow rule. IP or hostname, net must be a number (CIDR notation)\n");
 		fprintf(stderr, "\t-a  ntlm | nt | lm\n"
-				"\t    Authentication type - combined NTLM, just LM, or just NT. Default NTLM.\n"
+				"\t    Authentication type - combined NTLM, just LM, or just NT. Default NTLM.\n");
 #ifdef ENABLE_KERBEROS
-				"\t    GSS activates kerberos auth: you need a cached credential.\n"
+		fprintf(stderr, "\t    GSS activates kerberos auth: you need a cached credential.\n");
 #endif
-				"\t    It is the most versatile setting and likely to work for you.\n");
+		fprintf(stderr, "\t    It is the most versatile setting and likely to work for you.\n");
 		fprintf(stderr, "\t-B  Enable NTLM-to-basic authentication.\n");
 		fprintf(stderr, "\t-c  <config_file>\n"
 				"\t    Configuration file. Other arguments can be used as well, overriding\n"
@@ -943,11 +956,11 @@ int main(int argc, char **argv) {
 	/*
 	 * More arguments on the command-line? Must be proxies.
 	 */
-	i = optind;
-	while (i < argc) {
-		tmp = strchr(argv[i], ':');
-		parent_add(argv[i], !tmp && i+1 < argc ? atoi(argv[i+1]) : 0);
-		i += (!tmp ? 2 : 1);
+	n = optind;
+	while (n < argc) {
+		tmp = strchr(argv[n], ':');
+		parent_add(argv[n], !tmp && n+1 < argc ? atoi(argv[n+1]) : 0);
+		n += (!tmp ? 2 : 1);
 	}
 
 	/*
@@ -965,15 +978,16 @@ int main(int argc, char **argv) {
 		head = new(MINIBUF_SIZE);
 		strlcpy(head, tmp, MINIBUF_SIZE);
 		strlcat(head, "\\Cntlm\\cntlm.ini", MINIBUF_SIZE);
-		cf = config_open(head);
+		default_config = head;
 #else
-		cf = config_open(SYSCONFDIR "/cntlm.conf");
+		default_config = SYSCONFDIR "/cntlm.conf";
 #endif
+		cf = config_open(default_config);
 		if (debug) {
 			if (cf)
-				printf("Default config file opened successfully\n");
+				printf("Default config file %s opened successfully\n", default_config);
 			else
-				syslog(LOG_ERR, "Could not open default config file\n");
+				syslog(LOG_ERR, "Could not open default config file %s\n", default_config);
 		}
 	}
 #endif
@@ -1055,8 +1069,8 @@ int main(int argc, char **argv) {
 		if (rules == NULL) {
 			list = cf->options;
 			while (list) {
-				if (!(i=strcasecmp("Allow", list->key)) || !strcasecmp("Deny", list->key))
-					if (!acl_add(&rules, list->value, i ? ACL_DENY : ACL_ALLOW))
+				if (!(n=strcasecmp("Allow", list->key)) || !strcasecmp("Deny", list->key))
+					if (!acl_add(&rules, list->value, n ? ACL_DENY : ACL_ALLOW))
 						myexit(1);
 				list = list->next;
 			}
@@ -1066,6 +1080,28 @@ int main(int argc, char **argv) {
 			while ((tmp = config_pop(cf, "Deny")))
 				free(tmp);
 		}
+
+		/*
+		 * Add ACL hosts for forward
+		*/
+		list = cf->options;
+		while (list) {
+			if (!(n=strcasecmp("forward.Allow", list->key)) || !strcasecmp("forward.Deny", list->key)) {
+				tmp = strdup(list->value);
+				rules_forward = plist_add(rules_forward, n ? ACL_DENY : ACL_ALLOW, tmp);
+			}
+			list = list->next;
+		}
+		while ((tmp = config_pop(cf, "forward.Allow")))
+			free(tmp);
+		while ((tmp = config_pop(cf, "forward.Deny")))
+			free(tmp);
+
+		tmp = new(MINIBUF_SIZE);
+		CFG_DEFAULT(cf, "forward.AllowRedirects", tmp, MINIBUF_SIZE);
+		if (!strcasecmp("yes", tmp))
+			forward_allow_redirects = 1;
+		free(tmp);
 
 		/*
 		 * Single options.
@@ -1119,9 +1155,9 @@ int main(int argc, char **argv) {
 			if (!scanner_plugin_maxsize)
 				scanner_plugin_maxsize = 1;
 
-			if ((i = strlen(tmp))) {
-				head = new(i + 3);
-				snprintf(head, i+3, "*%s*", tmp);
+			if ((pos = strlen(tmp))) {
+				head = new(pos + 3);
+				snprintf(head, pos+3, "*%s*", tmp);
 				scanner_agent_list = plist_add(scanner_agent_list, 0, head);
 			}
 			free(tmp);
@@ -1145,11 +1181,14 @@ int main(int argc, char **argv) {
 	if (!interactivehash && !magic_detect && !proxyd_list)
 		croak("No proxy service ports were successfully opened.\n", interactivepwd);
 
+	if (!rules_forward)
+		croak("No ACL for forward is defined, add Allow host/masks to the [forward] section in config file!.\n", interactivepwd || magic_detect);
+
 	/*
 	 * Set default value for the workstation. Hostname if possible.
 	 */
 	if (!strlen(cworkstation)) {
-#if config_gethostname == 1
+#ifdef HAVE_GETHOSTNAME
 		gethostname(cworkstation, MINIBUF_SIZE);
 #endif
 		if (!strlen(cworkstation))
@@ -1219,11 +1258,11 @@ int main(int argc, char **argv) {
 		tcsetattr(0, TCSADRAIN, &termnew);
 		tmp = fgets(cpassword, MINIBUF_SIZE, stdin);
 		tcsetattr(0, TCSADRAIN, &termold);
-		i = strlen(cpassword) - 1;
-		if (cpassword[i] == '\n') {
-			cpassword[i] = 0;
-			if (cpassword[i - 1] == '\r')
-				cpassword[i - 1] = 0;
+		pos = strlen(cpassword) - 1;
+		if (cpassword[pos] == '\n') {
+			cpassword[pos] = 0;
+			if (cpassword[pos - 1] == '\r')
+				cpassword[pos - 1] = 0;
 		}
 		printf("\n");
 	}
@@ -1309,19 +1348,19 @@ int main(int argc, char **argv) {
 	}
 
 	if (interactivehash) {
-		if (g_creds->passlm) {
+		if (g_creds->passlm[0]) {
 			tmp = printmem(g_creds->passlm, 16, 8);
 			printf("PassLM          %s\n", tmp);
 			free(tmp);
 		}
 
-		if (g_creds->passnt) {
+		if (g_creds->passnt[0]) {
 			tmp = printmem(g_creds->passnt, 16, 8);
 			printf("PassNT          %s\n", tmp);
 			free(tmp);
 		}
 
-		if (g_creds->passntlm2) {
+		if (g_creds->passntlm2[0]) {
 			tmp = printmem(g_creds->passntlm2, 16, 8);
 			printf("PassNTLMv2      %s    # Only for user '%s', domain '%s'\n",
 				tmp, g_creds->user, g_creds->domain);
@@ -1337,9 +1376,9 @@ int main(int argc, char **argv) {
 #ifdef ENABLE_KERBEROS
 			!g_creds->haskrb &&
 #endif
-			((g_creds->hashnt && !g_creds->passnt)
-		     || (g_creds->hashlm && !g_creds->passlm)
-		     || (g_creds->hashntlm2 && !g_creds->passntlm2))) {
+			((g_creds->hashnt && !g_creds->passnt[0])
+		     || (g_creds->hashlm && !g_creds->passlm[0])
+		     || (g_creds->hashntlm2 && !g_creds->passntlm2[0]))) {
 		syslog(LOG_ERR, "Parent proxy account password (or required hashes) missing.\n");
 		myexit(1);
 	}
@@ -1354,23 +1393,24 @@ int main(int argc, char **argv) {
 		if (debug)
 			printf("Forking into background as requested.\n");
 
-		i = fork();
-		if (i == -1) {
+		pid = fork();
+		if (pid == -1) {
 			perror("Fork into background failed");		/* fork failed */
 			myexit(1);
-		} else if (i)
+		} else if (pid)
 			myexit(0);					/* parent */
 
 		setsid();
 		umask(0);
-		w = chdir("/");
-		i = open("/dev/null", O_RDWR);
-		if (i >= 0) {
-			dup2(i, 0);
-			dup2(i, 1);
-			dup2(i, 2);
-			if (i > 2)
-				close(i);
+		_unused = chdir("/");
+
+		n = open("/dev/null", O_RDWR);
+		if (n >= 0) {
+			dup2(n, 0);
+			dup2(n, 1);
+			dup2(n, 2);
+			if (n > 2)
+				close(n);
 		}
 	}
 
@@ -1409,10 +1449,15 @@ int main(int argc, char **argv) {
 				nuid = pw->pw_uid;
 				ngid = pw->pw_gid;
 			}
-			setgid(ngid);
-			i = setuid(nuid);
+			/* drop groups before changing uid per POSIX POS36-C */
+			if ((setgroups(0, NULL) < 0) && (errno != EPERM)) {
+				syslog(LOG_ERR, "drop groups: setgroups failed: %s, Terminating\n", strerror(errno));
+				myexit(1);
+			}
+			_unused = setgid(ngid);
+			n = setuid(nuid);
 			syslog(LOG_INFO, "Changing uid:gid to %d:%d - %s\n", nuid, ngid, strerror(errno));
-			if (i) {
+			if (n) {
 				syslog(LOG_ERR, "Terminating\n");
 				myexit(1);
 			}
@@ -1424,6 +1469,8 @@ int main(int argc, char **argv) {
 	 * If we fail, exit with error.
 	 */
 	if (strlen(cpidfile)) {
+		int len;
+
 		umask(0);
 		cd = open(cpidfile, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (cd < 0) {
@@ -1433,7 +1480,12 @@ int main(int argc, char **argv) {
 
 		tmp = new(50);
 		snprintf(tmp, 50, "%d\n", getpid());
-		w = write(cd, tmp, strlen(tmp));
+		_unused = write(cd, tmp, strlen(tmp));
+		n = write(cd, tmp, (len = strlen(tmp)));
+		if (n != len) {
+			syslog(LOG_ERR, "Error writing to the PID file\n");
+			myexit(1);
+		}
 		free(tmp);
 		close(cd);
 	}
@@ -1521,12 +1573,12 @@ int main(int argc, char **argv) {
 		 */
 		cd = select(FD_SETSIZE, &set, NULL, NULL, &tv);
 		if (cd > 0) {
-			for (i = 0; i < FD_SETSIZE; ++i) {
-				if (!FD_ISSET(i, &set))
+			for (n = 0; n < FD_SETSIZE; ++n) {
+				if (!FD_ISSET(n, &set))
 					continue;
 
 				clen = sizeof(caddr);
-				cd = accept(i, (struct sockaddr *)&caddr, (socklen_t *)&clen);
+				cd = accept(n, (struct sockaddr *)&caddr, (socklen_t *)&clen);
 
 				if (cd < 0) {
 					syslog(LOG_ERR, "Serious error during accept: %s\n", strerror(errno));
@@ -1540,7 +1592,7 @@ int main(int argc, char **argv) {
 					syslog(LOG_WARNING, "Connection denied for %s:%d\n",
 						inet_ntoa(caddr.sin_addr), ntohs(caddr.sin_port));
 					tmp = gen_denied_page(inet_ntoa(caddr.sin_addr));
-					w = write(cd, tmp, strlen(tmp));
+					_unused = write(cd, tmp, strlen(tmp));
 					free(tmp);
 					close(cd);
 					continue;
@@ -1560,7 +1612,7 @@ int main(int argc, char **argv) {
 				pthread_attr_setguardsize(&pattr, 256);
 #endif
 
-				if (plist_in(proxyd_list, i)) {
+				if (plist_in(proxyd_list, n)) {
 					data = (struct thread_arg_s *)new(sizeof(struct thread_arg_s));
 					data->fd = cd;
 					data->addr = caddr;
@@ -1568,7 +1620,7 @@ int main(int argc, char **argv) {
 						tid = pthread_create(&pthr, &pattr, proxy_thread, (void *)data);
 					else
 						proxy_thread((void *)data);
-				} else if (plist_in(socksd_list, i)) {
+				} else if (plist_in(socksd_list, n)) {
 					data = (struct thread_arg_s *)new(sizeof(struct thread_arg_s));
 					data->fd = cd;
 					data->addr = caddr;
@@ -1577,7 +1629,7 @@ int main(int argc, char **argv) {
 					data = (struct thread_arg_s *)new(sizeof(struct thread_arg_s));
 					data->fd = cd;
 					data->addr = caddr;
-					data->target = plist_get(tunneld_list, i);
+					data->target = plist_get(tunneld_list, n);
 					tid = pthread_create(&pthr, &pattr, tunnel_thread, (void *)data);
 				}
 
@@ -1596,12 +1648,12 @@ int main(int argc, char **argv) {
 			t = threads_list;
 			while (t) {
 				plist_t tmp = t->next;
-				tid = pthread_join((pthread_t)t->key, (void *)&i);
+				tid = pthread_join((pthread_t)t->key, (void *)&n);
 
 				if (!tid) {
 					tj++;
 					if (debug)
-						printf("Joining thread %lu; rc: %d\n", t->key, i);
+						printf("Joining thread %lu; rc: %d\n", t->key, n);
 				} else
 					syslog(LOG_ERR, "Serious error during pthread_join: %d\n", tid);
 
@@ -1629,6 +1681,7 @@ bailout:
 	plist_free(proxyd_list);
 	plist_free(socksd_list);
 	plist_free(rules);
+	plist_free(rules_forward);
 
 	free(cuid);
 	free(cpidfile);

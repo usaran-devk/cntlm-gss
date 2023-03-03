@@ -2,5 +2,5 @@
 
 int main(int argc, char **argv) {
 	socklen_t len;
-	return !!sizeof(len);
+	return !sizeof(len);
 }

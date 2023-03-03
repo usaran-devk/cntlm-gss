@@ -52,7 +52,7 @@ int is_http_header(const char *src) {
  * Extract the header name from the source.
  */
 char *get_http_header_name(const char *src) {
-	int i;
+	size_t i;
 
 	i = strcspn(src, ":");
 	if (i != strlen(src))
@@ -84,7 +84,7 @@ char *get_http_header_value(const char *src) {
  */
 int headers_recv(int fd, rr_data_t data) {
 	int i, bsize;
-	int len;
+	int len, is_http = 0;
 	char *buf;
 	char *tok, *s3 = 0;
 	char *orig = NULL;
@@ -108,11 +108,21 @@ int headers_recv(int fd, rr_data_t data) {
 	orig = strdup(buf);
 	len = strlen(buf);
 	tok = strtok_r(buf, " ", &s3);
-	if (tok && (!strncasecmp(buf, "HTTP/", 5) || !strncasecmp(tok, "ICY", 3))) {
+	if (tok && ((is_http = !strncasecmp(tok, "HTTP/", 5)) || !strncasecmp(tok, "ICY", 3))) {
 		data->req = 0;
 		data->empty = 0;
 		data->http = strdup(tok);
 		data->msg = NULL;
+
+		/*
+		 * Let's find out the numeric version of the HTTP version: 09, 10, 11.
+		 * Set to -1 if header is misformatted.
+		 */
+		if (is_http && (tok = strchr(data->http, '/')) && strlen(tok) >= 4 && isdigit(tok[1]) && isdigit(tok[3])) {
+			data->http_version = (tok[1] - 0x30) * 10 + (tok[3] - 0x30);
+		} else {
+			data->http_version = -1;
+		}
 
 		tok = strtok_r(NULL, " ", &s3);
 		if (tok) {
@@ -154,6 +164,16 @@ int headers_recv(int fd, rr_data_t data) {
 		if (!data->url || !data->http) {
 			i = -3;
 			goto bailout;
+		}
+
+		/*
+		 * Let's find out the numeric version of the HTTP version: 09, 10, 11.
+		 * Set to -1 if header is misformatted.
+		 */
+		if ((tok = strchr(data->http, '/')) && strlen(tok) >= 4 && isdigit(tok[1]) && isdigit(tok[3])) {
+			data->http_version = (tok[1] - 0x30) * 10 + (tok[3] - 0x30);
+		} else {
+			data->http_version = -1;
 		}
 
 		if ((tok = strstr(data->url, "://"))) {
@@ -367,10 +387,12 @@ int data_send(int dst, int src, length_t len) {
  */
 int chunked_data_send(int dst, int src) {
 	char *buf;
+	size_t len, w;
 	int bsize;
-	int i, w, csize;
+	int i, csize;
 
 	char *err = NULL;
+	int _unused __attribute__((unused));
 
 	bsize = BUFSIZE;
 	buf = new(bsize);
@@ -408,11 +430,14 @@ int chunked_data_send(int dst, int src) {
 	} while (csize != 0);
 
 	/* Take care of possible trailer */
+	w = len = i = 0;
 	do {
 		i = so_recvln(src, &buf, &bsize);
-		if (dst >= 0 && i > 0)
-			w = write(dst, buf, strlen(buf));
-	} while (i > 0 && buf[0] != '\r' && buf[0] != '\n');
+		if (dst >= 0 && i > 0) {
+			len = strlen(buf);
+			w = write(dst, buf, len);
+		}
+	} while (w == len && i > 0 && buf[0] != '\r' && buf[0] != '\n');
 
 	free(buf);
 	return 1;
@@ -597,7 +622,7 @@ int http_body_drop(int fd, rr_data_t response) {
  */
 int http_parse_basic(hlist_t headers, const char *header, struct auth_s *tcreds) {
 	char *tmp = NULL, *pos = NULL, *buf = NULL, *dom = NULL;
-	int i;
+	size_t i;
 
 	if (!hlist_subcmp(headers, header, "basic"))
 		return 0;

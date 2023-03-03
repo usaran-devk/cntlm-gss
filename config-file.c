@@ -25,7 +25,7 @@
 #include <stdlib.h>
 
 #include "globals.h"
-#include "config.h"
+#include "config-file.h"
 #include "utils.h"
 
 /*
@@ -44,8 +44,12 @@ config_t config_open(const char *fname) {
 	config_t rc;
 	FILE *fp;
 	char *buf, *tmp, *key, *value;
-	char section[MINIBUF_SIZE] = "global";
-	int i, j, slen, len, quote;
+	const char *global_section_name = "global";
+	char section[MINIBUF_SIZE];
+	size_t i, j, len;
+	int slen, quote;
+
+	strcpy(section, global_section_name);
 
 	//printf("sizeof = %d\n", sizeof(globals) / sizeof(char *));
 
@@ -137,7 +141,18 @@ config_t config_open(const char *fname) {
 
 		if (debug)
 			printf("section: %s, %s = '%s'\n", section, key, value);
-		rc->options = hlist_add(rc->options, key, value, HLIST_NOALLOC, HLIST_NOALLOC);
+
+		char *key_ptr = key;
+		hlist_add_t key_flag = HLIST_NOALLOC;
+		if (strcmp(section,global_section_name) != 0) {
+			strcpy(buf, section);
+			strcat(buf, ".");
+			strcat(buf, key);
+			key_flag = HLIST_ALLOC;
+			key_ptr = buf;
+			free(key);
+		}
+		rc->options = hlist_add(rc->options, key_ptr, value, key_flag, HLIST_NOALLOC);
 	}
 
 	free(buf);

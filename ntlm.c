@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include "ntlm.h"
 #include "swap.h"
@@ -156,7 +157,7 @@ char *ntlm_hash_lm_password(char *password) {
 
 	keys = new(21 + 1);
 	pass = new(14 + 1);
-	uppercase(strncpy(pass, password, MIN(14, strlen(password))));
+	uppercase(strncpy(pass, password, 14));
 
 	ntlm_set_key(MEM(pass, unsigned char, 0), &context);
 	gl_des_ecb_encrypt(&context, magic, keys);
