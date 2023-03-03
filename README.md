@@ -1,7 +1,5 @@
 This is [Cntlm](http://cntlm.sourceforge.net/) **with Kerberos patch applied**.
 
-Works on a Ubuntu 12.04 box, at least for me.
-
 Dependency: [Kerberos](http://web.mit.edu/kerberos/).
 
 ### Main changes in this fork
