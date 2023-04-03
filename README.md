@@ -63,7 +63,7 @@ Listen 3128
 
 [forward]
 #AllowRedirects  yes
-Allow=*
+Allow *
 ```
 
 The username, domain and password are all unset.
