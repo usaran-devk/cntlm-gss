@@ -37,7 +37,7 @@ $ cmake --install . --strip
 
 **Legacy**
 
-**!WARNING!** I'm sorry but this method of configuring is obsolated and will be removed soon...
+**!WARNING!** I'm sorry but this method of configuring is obsoleted and will be removed soon...
 
 If Kerberos is compiled to a different location, say, $HOME/usr, compile Cntlm with
 
