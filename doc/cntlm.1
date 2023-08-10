@@ -87,7 +87,7 @@ the list of unused options). There you can also see warnings about possibly inco
 the \fIIP\fP part has more bits than you declare by \fImask\fP (e.g. 10.20.30.40/24 should be 10.20.30.0/24).
 
 .TP 
-.B -a NTLMv2 | NTLM2SR | NT | NTLM | LM | GSS\ \ \ \ (Auth)
+.B -a NTLMv2 | NTLM2SR | NT | NTLM | LM | GSS | BASIC\ \ \ \ (Auth)
 Authentication type. NTLM(v2) comprises of one or two hashed responses, NT and LM or NTLM2SR or NTv2 and LMv2,
 which are computed from the password hash. Each response uses a different hashing algorithm; as new response
 types were invented, stronger algorithms were used. When you first install \fBcntlm\fP, find the strongest one
@@ -107,7 +107,13 @@ In example KRB5CCNAME=FILE:/tmp/my_krb5cc_for_LDS.IT
 If GSS is specified, at each connection sends the auth token without to ask the proxy if auth is needed.
 If GSS credentials are not available will fallback to the NTLM discovery procedure
 If no Auth type is specified and there is a GSS cached credential available and the server asks for a 
-'Negotiate' auth, then a GSS token is used, else the NTLM auth is used
+\fINegotiate\fP auth, then a GSS token is used, else the NTLM auth is used.
+.br
+\fBBASIC:\fP BASIC authentication is not recommended at all, but might be the only option left if the other available
+authentication types do not work for whatever reason.
+.br
+This option was added because it is still a security improvement when using it in combination with \fB-I\fP
+over other solutions such as \fI.netrc\fP or adding credentials to the proxy url.
 
 
 .ne 4

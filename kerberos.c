@@ -253,7 +253,9 @@ int acquire_kerberos_token(proxy_t* proxy, struct auth_s *credentials, char** bu
 	if (!(credentials->haskrb & KRB_CREDENTIAL_AVAILABLE)) {
 		//try to get credential
 //		if(acquire_credential(credentials)){
-			credentials->haskrb |= check_credential();
+			if (!(credentials->haskrb & KRB_DISABLE_USE_KRB)) {
+				credentials->haskrb |= check_credential();
+			}
 			if (!(credentials->haskrb & KRB_CREDENTIAL_AVAILABLE)){
 				//no credential -> no token
 				syslog(LOG_ERR, "No valid credential available\n");

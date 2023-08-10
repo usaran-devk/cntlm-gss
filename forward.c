@@ -188,11 +188,20 @@ int proxy_authenticate(int *sd, rr_data_t request, rr_data_t response, struct au
 	}
 	else {
 #endif
-		strcpy(buf, "NTLM ");
-		len = ntlm_request(&tmp, credentials);
-		if (len) {
-			to_base64(MEM(buf, uint8_t, 5), MEM(tmp, uint8_t, 0), len, BUFSIZE-5);
+		if (g_creds->hashlm == 0 && g_creds->hashnt == 0 && g_creds->hashntlm2 == 0) {
+			// Basic Auth
+			strcpy(buf, "Basic ");
+			tmp = new(strlen(g_creds->user) + strlen(g_creds->passbasic) + 2);
+			len = sprintf(tmp, "%s:%s", g_creds->user, g_creds->passbasic);
+			to_base64(MEM(buf, uint8_t, 6), MEM(tmp, uint8_t, 0), len, BUFSIZE-5);
 			free(tmp);
+		} else {
+			strcpy(buf, "NTLM ");
+			len = ntlm_request(&tmp, credentials);
+			if (len) {
+				to_base64(MEM(buf, uint8_t, 5), MEM(tmp, uint8_t, 0), len, BUFSIZE-5);
+				free(tmp);
+			}
 		}
 
 #ifdef ENABLE_KERBEROS		

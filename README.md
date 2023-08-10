@@ -9,6 +9,9 @@ Dependency: [Kerberos](http://web.mit.edu/kerberos/).
 * Many bug from warnings fixed, warning-as-error now
 * allow/deny list added as [forward] config section to limit hosts available through parent proxy (with optional auto-allow for HTTP redirects)
 * SIGINT signal can be used to fast restart w/o wait closing connections
+* BASIC authentication option.
+  This was added because it might be the only working authentication type, and using it with option **-I** is
+  still better than other solutions like `.netrc` or adding credentials to the proxy url.
 
 ### Install
 Prebuilt packages is available on Open Build Service in project [home:biserov:cntlm-gss](https://build.opensuse.org/package/show/home:biserov:cntlm-gss/cntlm) for the next OS list:

@@ -34,6 +34,7 @@
 #define KRB_NO_CREDS				0
 #define KRB_CREDENTIAL_AVAILABLE	1
 #define KRB_FORCE_USE_KRB			2
+#define KRB_DISABLE_USE_KRB			4
 
 //used while auth
 #define KRB_NOT_TRIED 	0

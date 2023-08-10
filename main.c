@@ -898,8 +898,8 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "Usage: %s [-AaBcDdFfgHhILlMPpSsTUuvw] <proxy_host>[:]<proxy_port> ...\n", argv[0]);
 		fprintf(stderr, "\t-A  <address>[/<net>]\n"
 				"\t    ACL allow rule. IP or hostname, net must be a number (CIDR notation)\n");
-		fprintf(stderr, "\t-a  ntlm | nt | lm\n"
-				"\t    Authentication type - combined NTLM, just LM, or just NT. Default NTLM.\n");
+		fprintf(stderr, "\t-a  basic | ntlm | nt | lm\n"
+				"\t    Authentication type - basic, combined NTLM, just LM, or just NT. Default NTLM.\n");
 #ifdef ENABLE_KERBEROS
 		fprintf(stderr, "\t    GSS activates kerberos auth: you need a cached credential.\n");
 #endif
@@ -1201,7 +1201,14 @@ int main(int argc, char **argv) {
 	 * Parse selected NTLM hash combination.
 	 */
 	if (strlen(cauth)) {
-		if (!strcasecmp("ntlm", cauth)) {
+		if (!strcasecmp("basic", cauth)) {
+#ifdef ENABLE_KERBEROS
+			g_creds->haskrb = KRB_DISABLE_USE_KRB;
+#endif
+			g_creds->hashnt = 0;
+			g_creds->hashlm = 0;
+			g_creds->hashntlm2 = 0;
+		} else if (!strcasecmp("ntlm", cauth)) {
 			g_creds->hashnt = 1;
 			g_creds->hashlm = 1;
 			g_creds->hashntlm2 = 0;
@@ -1303,6 +1310,9 @@ int main(int argc, char **argv) {
 			free(tmp);
 		}
 	} else {
+		if (g_creds->hashlm == 0 && g_creds->hashnt == 0 && g_creds->hashntlm2 == 0) {
+			auth_strcpy(g_creds, passbasic, cpassword);
+		}
 		if (g_creds->hashnt || magic_detect || interactivehash) {
 			tmp = ntlm_hash_nt_password(cpassword);
 			auth_memcpy(g_creds, passnt, tmp, 21);
@@ -1320,7 +1330,9 @@ int main(int argc, char **argv) {
 	}
 
 #ifdef ENABLE_KERBEROS
-	g_creds->haskrb |= check_credential();
+	if (!(g_creds->haskrb & KRB_DISABLE_USE_KRB)) {
+		g_creds->haskrb |= check_credential();
+	}
 	if(g_creds->haskrb & KRB_CREDENTIAL_AVAILABLE)
 		syslog(LOG_INFO, "Using cached credential for GSS auth.\n");
 #endif

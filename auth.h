@@ -35,6 +35,7 @@ struct auth_s {
 	char user[MINIBUF_SIZE];
 	char domain[MINIBUF_SIZE];
 	char workstation[MINIBUF_SIZE];
+	char passbasic[MINIBUF_SIZE];
 	char passlm[MINIBUF_SIZE];
 	char passnt[MINIBUF_SIZE];
 	char passntlm2[MINIBUF_SIZE];
